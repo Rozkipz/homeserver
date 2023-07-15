@@ -1,0 +1,6 @@
+apiVersion: v2
+name: home-server
+version: 0.1.0
+type: application
+keywords:
+  - plex
