@@ -1,6 +1,19 @@
 apiVersion: v2
 name: home-server
-version: 0.1.0
+version: 0.2.0
 type: application
 keywords:
+  - archivebox
+  - bazarr
+  - checkrr
+  - exportarr
+  - flaresolverr
+  - homer
+  - jackett
+  - monero
+  - ombi
   - plex
+  - radarr
+  - sonarr
+  - wizarr
+  - unpackerr

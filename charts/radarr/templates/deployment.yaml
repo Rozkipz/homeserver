@@ -17,7 +17,6 @@ spec:
       containers:
         - name: {{ .Chart.Name  }}
           # Couldn't get this working on k3s running in a VM - try again running on metal? Seemed to be an image problem.
-          # Maybe issue with the way with image works?
 
           #env:
           #  - name: PUID

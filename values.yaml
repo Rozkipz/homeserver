@@ -1,31 +1,125 @@
+archivebox:
+  enabled: true
+  image:
+    repository: archivebox/archivebox
+    version: sha-6c06da5
+  pullPolicy: Always
+  port: 8000
+  securityContext: {}
+
+bazarr:
+  enabled: true
+  image:
+    repository: linuxserver/bazarr
+    version: 1.2.3-development
+  pullPolicy: Always
+  port: 6767
+  securityContext: {}
+
+checkrr:
+  enabled: true
+  image:
+    repository: aetaric/checkrr
+    version: 3.1.3
+  pullPolicy: Always
+  port: 8585
+  securityContext: {}
+
+exportarr:
+  enabled: true
+  image:
+    repository: ghcr.io/onedr0p/exportarr
+    version: v1.5.3
+  pullPolicy: Always
+  port: 9707
+  securityContext: {}
+
+flaresolverr:
+  enabled: true
+  image:
+    repository: flaresolverr/flaresolverr
+    version: v3.2.2
+  pullPolicy: Always
+  port: 8191
+  securityContext: {}
+
+homer:
+  enabled: true
+  image:
+    repository: b4bz/homer
+    version: v23.05.1
+  pullPolicy: Always
+  port: 8080
+  securityContext: {}
+
+jackett:
+  enabled: true
+  image:
+    repository: linuxserver/jackett
+    version: 0.21.481-development
+  pullPolicy: Always
+  port: 9117
+  securityContext: {}
+
+monero:
+  enabled: false
+  image:
+    repository: noimageyet
+    version: noversionyet
+  pullPolicy: Always
+  port: 18080
+  # 18081
+  securityContext: {}
+
+ombi:
+  enabled: true
+  image:
+    repository: linuxserver/ombi
+    version: 4.43.1-development
+  pullPolicy: Always
+  port: 5000
+  securityContext: {}
+
 plex:
   enabled: true
   image:
-    repository: lscr.io/linuxserver/plex
+    repository: linuxserver/plex
     version: 1.32.4
   pullPolicy: Always
   port: 32400
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-#   resources:
+  securityContext: {}
+#     runAsUser: 1000
+#     runAsGroup: 1000
+  resources: {}
 #     limits:
 #       gpu.intel.com/i915: "1"
 
+radarr:
+  enabled: true
+  image:
+    repository: linuxserver/radarr
+    version: 4.6.4
+  pullPolicy: Always
+  port: 7878
+  securityContext: {}
 
+sonarr:
+  enabled: true
+  image:
+    repository: linuxserver/sonarr
+    version: 1.32.4
+  pullPolicy: Always
+  port: 8989
+  securityContext: {}
 
+wizarr:
+  enabled: false
 
-
-
-
-
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+unpackerr:
+  enabled: true
+  image:
+    repository: golift/unpackerr
+    version: 1.32.4
+  pullPolicy: Always
+  port: 8989
+  securityContext: {}

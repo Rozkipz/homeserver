@@ -56,6 +56,13 @@ helm install plex .
 
 
 
+
+
+kubectl port-forward plex/plex-6ccd4bc477-zsrb5 --namespace=plex --address='0.0.0.0' 32400:32400
+
+http://127.0.0.1:32400/manage
+
+
 ```shell
 rowan@k3s:~$ kubectl  get svc --all-namespaces
 NAMESPACE     NAME             TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
