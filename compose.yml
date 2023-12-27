@@ -1,0 +1,348 @@
+---
+version: "1"
+services:
+  dockerui:
+    container_name: dockerui
+    image: "otothea/docker-ui:latest"
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9898:9898"
+
+  wireguard:
+    container_name: wireguard
+    image: "ghcr.io/wg-easy/wg-easy"
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - WG_HOST="wgtest"
+#       - PASSWORD="testpassword"
+    volumes:
+      - ~/services/wireguard/config/:/etc/wireguard/
+    ports:
+      - 51820:51820/udp
+      - 51821:51821/tcp
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv4.ip_forward=1
+
+  archivebox:
+    container_name: archivebox
+    image: "archivebox/archivebox:latest"
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ~/services/archivebox/data/:/data/
+
+  bazarr:
+    container_name: bazarr
+    image: "linuxserver/bazarr:latest"
+    networks:
+      - mediarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - "6767:6767"
+    volumes:
+      - ~/services/bazarr/config:/config
+      - /mnt/drive1/TV:/drive1/TV
+      - /mnt/drive1/TV:/drive1/Movies
+      - /mnt/drive2/TV:/drive2/TV
+      - /mnt/drive2/TV:/drive2/Movies
+      - /mnt/drive3/TV:/drive3/TV
+      - /mnt/drive3/TV:/drive3/Movies
+      - /mnt/drive4/TV:/drive4/TV
+      - /mnt/drive4/TV:/drive4/Movies
+      - /mnt/drive5/TV:/drive5/TV
+      - /mnt/drive5/TV:/drive5/Movies
+      - /mnt/drive6/TV:/drive6/TV
+      - /mnt/drive6/TV:/drive6/Movies
+      - /mnt/drive7/TV:/drive7/TV
+      - /mnt/drive7/TV:/drive7/Movies
+      - /mnt/drive8/TV:/drive8/TV
+      - /mnt/drive8/TV:/drive8/Movies
+      - /mnt/drive9/TV:/drive9/TV
+      - /mnt/drive9/TV:/drive9/Movies
+      - /mnt/drive10/TV:/drive10/TV
+      - /mnt/drive10/TV:/drive10/Movies
+      - /mnt/drive11/TV:/drive11/TV
+      - /mnt/drive11/TV:/drive11/Movies
+    depends_on:
+      - sonarr
+      - radarr
+
+  checkrr:
+    container_name: checkrr
+    image: "aetaric/checkrr:latest"
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - "8585:8585"
+    volumes:
+      - ~/services/checkrr/checkrr.yaml:/etc/checkrr.yaml
+      - ~/services/checkrr/data/:/data/
+      - /mnt/drive1/TV:/drive1/TV
+      - /mnt/drive1/TV:/drive1/Movies
+      - /mnt/drive2/TV:/drive2/TV
+      - /mnt/drive2/TV:/drive2/Movies
+      - /mnt/drive3/TV:/drive3/TV
+      - /mnt/drive3/TV:/drive3/Movies
+      - /mnt/drive4/TV:/drive4/TV
+      - /mnt/drive4/TV:/drive4/Movies
+      - /mnt/drive5/TV:/drive5/TV
+      - /mnt/drive5/TV:/drive5/Movies
+      - /mnt/drive6/TV:/drive6/TV
+      - /mnt/drive6/TV:/drive6/Movies
+      - /mnt/drive7/TV:/drive7/TV
+      - /mnt/drive7/TV:/drive7/Movies
+      - /mnt/drive8/TV:/drive8/TV
+      - /mnt/drive8/TV:/drive8/Movies
+      - /mnt/drive9/TV:/drive9/TV
+      - /mnt/drive9/TV:/drive9/Movies
+      - /mnt/drive10/TV:/drive10/TV
+      - /mnt/drive10/TV:/drive10/Movies
+      - /mnt/drive11/TV:/drive11/TV
+      - /mnt/drive11/TV:/drive11/Movies
+
+  prowlarr-exporter:
+    container_name: prowlarr-exporter
+    image: "ghcr.io/onedr0p/exportarr:latest"
+    command: ["prowlarr"]
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - PORT=9710
+      - URL="http://prowlarr:9696"
+      - APIKEY="abc"
+    ports:
+     - "9710:9710"
+
+  prowlarr:
+    container_name: prowlarr
+    image: "lscr.io/linuxserver/prowlarr:latest"
+    networks:
+      - mediarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ~/services/prowlarr/config:/config
+    ports:
+      - 9696:9696
+    depends_on:
+      - flaresolverr
+
+  flaresolverr:
+    container_name: flaresolverr
+    image: "ghcr.io/flaresolverr/flaresolverr:latest"
+    hostname: flaresolverr
+    networks:
+      - mediarr
+    ports:
+      - 8191:8191
+    environment:
+        - PUID=1000
+        - PGID=1000
+#       - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+
+  duplicati:
+    container_name: duplicati
+    image: "lscr.io/linuxserver/duplicati:latest"
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ~/services/duplicati/config:/config
+      - ~/services/duplicati/restore:/restore
+      - ~/services/duplicati/backups:/backups
+      - ~/services/duplicati/source:/source
+    networks:
+      - duplicati
+    ports:
+      - 8200:8200
+
+#     homer:
+#       enabled: true
+#       image:
+#         repository: "b4bz/homer"
+#         version: v23.05.1
+#       pullPolicy: Always
+#       port: 8080
+#       securityContext: {}
+
+  ombi:
+    container_name: ombi
+    image: "linuxserver/ombi:latest"
+    ports:
+      - 5000:5000
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ~/services/ombi/config:/config
+
+  plex:
+    container_name: plex
+    image: "linuxserver/plex:latest"
+    ports:
+      - 32400:32400
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - VERSION=docker
+    volumes:
+      - ~/services/plex/config:/config
+      - /mnt/drive1/TV:/drive1/TV
+      - /mnt/drive1/TV:/drive1/Movies
+      - /mnt/drive2/TV:/drive2/TV
+      - /mnt/drive2/TV:/drive2/Movies
+      - /mnt/drive3/TV:/drive3/TV
+      - /mnt/drive3/TV:/drive3/Movies
+      - /mnt/drive4/TV:/drive4/TV
+      - /mnt/drive4/TV:/drive4/Movies
+      - /mnt/drive5/TV:/drive5/TV
+      - /mnt/drive5/TV:/drive5/Movies
+      - /mnt/drive6/TV:/drive6/TV
+      - /mnt/drive6/TV:/drive6/Movies
+      - /mnt/drive7/TV:/drive7/TV
+      - /mnt/drive7/TV:/drive7/Movies
+      - /mnt/drive8/TV:/drive8/TV
+      - /mnt/drive8/TV:/drive8/Movies
+      - /mnt/drive9/TV:/drive9/TV
+      - /mnt/drive9/TV:/drive9/Movies
+      - /mnt/drive10/TV:/drive10/TV
+      - /mnt/drive10/TV:/drive10/Movies
+      - /mnt/drive11/TV:/drive11/TV
+      - /mnt/drive11/TV:/drive11/Movies
+
+  wizarr:
+    container_name: wizarr
+    image: ghcr.io/wizarrrr/wizarr:latest
+    ports:
+      - 5690:5690
+    volumes:
+      - ~/services/wizarr/database:/data/database
+    environment:
+      - PUID=1000
+      - PGID=1000
+
+  unpackerr:
+    container_name: unpackerr
+    image: "golift/unpackerr:latest"
+    networks:
+      - mediarr
+    environment:
+      - PUID=1000
+      - PGID=100
+
+  radarr: 
+    container_name: radarr
+    image: lscr.io/linuxserver/radarr:latest 
+    networks: 
+      - mediarr 
+    environment: 
+      - PUID=1000 
+      - PGID=100 
+    volumes:
+      - ~/services/radarr/config:/config
+      - /mnt/drive1/TV:/drive1/TV
+      - /mnt/drive1/TV:/drive1/Movies
+      - /mnt/drive2/TV:/drive2/TV
+      - /mnt/drive2/TV:/drive2/Movies
+      - /mnt/drive3/TV:/drive3/TV
+      - /mnt/drive3/TV:/drive3/Movies
+      - /mnt/drive4/TV:/drive4/TV
+      - /mnt/drive4/TV:/drive4/Movies
+      - /mnt/drive5/TV:/drive5/TV
+      - /mnt/drive5/TV:/drive5/Movies
+      - /mnt/drive6/TV:/drive6/TV
+      - /mnt/drive6/TV:/drive6/Movies
+      - /mnt/drive7/TV:/drive7/TV
+      - /mnt/drive7/TV:/drive7/Movies
+      - /mnt/drive8/TV:/drive8/TV
+      - /mnt/drive8/TV:/drive8/Movies
+      - /mnt/drive9/TV:/drive9/TV
+      - /mnt/drive9/TV:/drive9/Movies
+      - /mnt/drive10/TV:/drive10/TV
+      - /mnt/drive10/TV:/drive10/Movies
+      - /mnt/drive11/TV:/drive11/TV
+      - /mnt/drive11/TV:/drive11/Movies
+    depends_on:
+      - prowlarr
+    ports: 
+      - 7878:7878 
+
+  radarr-exporter:
+    container_name: radarr-exporter
+    image: "ghcr.io/onedr0p/exportarr:latest"
+    command: ["radarr"]
+    environment:
+      PORT: 9708
+      URL: "http://radarr:7878"
+      APIKEY: "xxx"
+
+  sonarr: 
+    container_name: sonarr
+    image: lscr.io/linuxserver/sonarr:latest 
+    networks: 
+      - mediarr 
+    environment: 
+      - PUID=1000 
+      - PGID=100 
+    volumes:
+      - ~/services/sonarr/config:/config
+      - /mnt/drive1/TV:/drive1/TV
+      - /mnt/drive1/TV:/drive1/Movies
+      - /mnt/drive2/TV:/drive2/TV
+      - /mnt/drive2/TV:/drive2/Movies
+      - /mnt/drive3/TV:/drive3/TV
+      - /mnt/drive3/TV:/drive3/Movies
+      - /mnt/drive4/TV:/drive4/TV
+      - /mnt/drive4/TV:/drive4/Movies
+      - /mnt/drive5/TV:/drive5/TV
+      - /mnt/drive5/TV:/drive5/Movies
+      - /mnt/drive6/TV:/drive6/TV
+      - /mnt/drive6/TV:/drive6/Movies
+      - /mnt/drive7/TV:/drive7/TV
+      - /mnt/drive7/TV:/drive7/Movies
+      - /mnt/drive8/TV:/drive8/TV
+      - /mnt/drive8/TV:/drive8/Movies
+      - /mnt/drive9/TV:/drive9/TV
+      - /mnt/drive9/TV:/drive9/Movies
+      - /mnt/drive10/TV:/drive10/TV
+      - /mnt/drive10/TV:/drive10/Movies
+      - /mnt/drive11/TV:/drive11/TV
+      - /mnt/drive11/TV:/drive11/Movies
+    depends_on:
+      - prowlarr 
+    ports:
+      - 8989:8989
+
+  sonarr-exporter:
+    container_name: sonarr-exporter
+    image: "ghcr.io/onedr0p/exportarr:latest"
+    command: ["sonarr"]
+    environment:
+      PORT: 9707
+      URL: "http://sonarr:8989"
+      APIKEY: "xxx"
+    ports:
+      - "9707:9707"
+
+networks:
+  duplicati:
+    driver: bridge
+  mediarr:
+    driver: bridge
