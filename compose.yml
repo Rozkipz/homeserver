@@ -257,27 +257,16 @@ services:
       - PGID=100 
     volumes:
       - ~/services/radarr/config:/config
-      - /mnt/drive1/TV:/drive1/TV
       - /mnt/drive1/TV:/drive1/Movies
-      - /mnt/drive2/TV:/drive2/TV
       - /mnt/drive2/TV:/drive2/Movies
-      - /mnt/drive3/TV:/drive3/TV
       - /mnt/drive3/TV:/drive3/Movies
-      - /mnt/drive4/TV:/drive4/TV
       - /mnt/drive4/TV:/drive4/Movies
-      - /mnt/drive5/TV:/drive5/TV
       - /mnt/drive5/TV:/drive5/Movies
-      - /mnt/drive6/TV:/drive6/TV
       - /mnt/drive6/TV:/drive6/Movies
-      - /mnt/drive7/TV:/drive7/TV
       - /mnt/drive7/TV:/drive7/Movies
-      - /mnt/drive8/TV:/drive8/TV
       - /mnt/drive8/TV:/drive8/Movies
-      - /mnt/drive9/TV:/drive9/TV
       - /mnt/drive9/TV:/drive9/Movies
-      - /mnt/drive10/TV:/drive10/TV
       - /mnt/drive10/TV:/drive10/Movies
-      - /mnt/drive11/TV:/drive11/TV
       - /mnt/drive11/TV:/drive11/Movies
     depends_on:
       - prowlarr
@@ -304,27 +293,16 @@ services:
     volumes:
       - ~/services/sonarr/config:/config
       - /mnt/drive1/TV:/drive1/TV
-      - /mnt/drive1/TV:/drive1/Movies
       - /mnt/drive2/TV:/drive2/TV
-      - /mnt/drive2/TV:/drive2/Movies
       - /mnt/drive3/TV:/drive3/TV
-      - /mnt/drive3/TV:/drive3/Movies
       - /mnt/drive4/TV:/drive4/TV
-      - /mnt/drive4/TV:/drive4/Movies
       - /mnt/drive5/TV:/drive5/TV
-      - /mnt/drive5/TV:/drive5/Movies
       - /mnt/drive6/TV:/drive6/TV
-      - /mnt/drive6/TV:/drive6/Movies
       - /mnt/drive7/TV:/drive7/TV
-      - /mnt/drive7/TV:/drive7/Movies
       - /mnt/drive8/TV:/drive8/TV
-      - /mnt/drive8/TV:/drive8/Movies
       - /mnt/drive9/TV:/drive9/TV
-      - /mnt/drive9/TV:/drive9/Movies
       - /mnt/drive10/TV:/drive10/TV
-      - /mnt/drive10/TV:/drive10/Movies
       - /mnt/drive11/TV:/drive11/TV
-      - /mnt/drive11/TV:/drive11/Movies
     depends_on:
       - prowlarr 
     ports:
