@@ -12,6 +12,19 @@ services:
     ports:
       - "9898:9898"
 
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:latest
+    container_name: heimdall
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ~/services/heimdall/config:/config
+    ports:
+      - 80:80
+      - 443:443
+    restart: unless-stopped
+
   wireguard:
     container_name: wireguard
     image: "ghcr.io/wg-easy/wg-easy"
@@ -24,7 +37,7 @@ services:
       - WG_HOST="wgtest"
 #       - PASSWORD="testpassword"
     volumes:
-      - ~/services/wireguard/config/:/etc/wireguard/
+      - ~/services/wireguard/config:/etc/wireguard
     ports:
       - 51820:51820/udp
       - 51821:51821/tcp
