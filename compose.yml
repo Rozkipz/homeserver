@@ -29,8 +29,8 @@ services:
     image: linuxserver/wireguard
     container_name: wireguard
     restart: unless-stopped
-    networks:
-      - wireguard-net
+#     networks:
+#       - wireguard-net
     volumes:
       - ~/services/wireguard/config:/config
 #       - '/lib/modules:/lib/modules:ro'
@@ -80,8 +80,8 @@ services:
   bazarr:
     container_name: bazarr
     image: "linuxserver/bazarr:latest"
-    networks:
-      - mediarr
+#     networks:
+#       - mediarr
     environment:
       - PUID=1000
       - PGID=1000
@@ -165,8 +165,8 @@ services:
   prowlarr:
     container_name: prowlarr
     image: "lscr.io/linuxserver/prowlarr:latest"
-    networks:
-      - mediarr
+#     networks:
+#       - mediarr
     environment:
       - PUID=1000
       - PGID=1000
@@ -181,8 +181,8 @@ services:
     container_name: flaresolverr
     image: "ghcr.io/flaresolverr/flaresolverr:latest"
     hostname: flaresolverr
-    networks:
-      - mediarr
+#     networks:
+#       - mediarr
     ports:
       - 8191:8191
     environment:
@@ -272,8 +272,8 @@ services:
   unpackerr:
     container_name: unpackerr
     image: "golift/unpackerr:latest"
-    networks:
-      - mediarr
+#     networks:
+#       - mediarr
     environment:
       - PUID=1000
       - PGID=100
@@ -281,8 +281,8 @@ services:
   radarr: 
     container_name: radarr
     image: lscr.io/linuxserver/radarr:latest 
-    networks: 
-      - mediarr 
+#     networks:
+#       - mediarr
     environment: 
       - PUID=1000 
       - PGID=100 
@@ -316,8 +316,8 @@ services:
   sonarr: 
     container_name: sonarr
     image: lscr.io/linuxserver/sonarr:latest 
-    networks: 
-      - mediarr 
+#     networks:
+#       - mediarr
     environment: 
       - PUID=1000 
       - PGID=100 
@@ -350,8 +350,8 @@ services:
     ports:
       - "9707:9707"
 
-networks:
-  wireguard-net:
-    driver: bridge
-  mediarr:
-    driver: bridge
+# networks:
+#   wireguard-net:
+#     driver: bridge
+#   mediarr:
+#     driver: bridge
