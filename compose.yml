@@ -26,10 +26,10 @@ services:
     container_name: dockerui
     image: "otothea/docker-ui:latest"
     environment:
-    networks:
-      - internal
       - PUID=1000
       - PGID=1000
+    networks:
+      - internal
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
