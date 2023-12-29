@@ -18,8 +18,9 @@ services:
       - PGID=1000
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_HOSTNAME=${TS_HOSTNAME}
+      - TS_USERSPACE=false
+      - TS_AUTH_ONCE=false
     command: tailscaled
-    privileged: true
     restart: unless-stopped
 
   dockerui:
@@ -29,7 +30,7 @@ services:
       - PUID=1000
       - PGID=1000
     networks:
-      - internal
+      - service:tailscale
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
@@ -38,7 +39,7 @@ services:
   heimdall:
     image: lscr.io/linuxserver/heimdall:latest
     networks:
-      - internal
+      - service:tailscale
     container_name: heimdall
     environment:
       - PUID=1000
@@ -53,7 +54,7 @@ services:
   wireguard:
     image: linuxserver/wireguard
     networks:
-      - internal
+      - service:tailscale
     container_name: wireguard
     restart: unless-stopped
 #     networks:
@@ -97,7 +98,7 @@ services:
     container_name: archivebox
     image: "archivebox/archivebox:latest"
     networks:
-      - internal
+      - service:tailscale
     environment:
       - PUID=1000
       - PGID=1000
@@ -110,7 +111,7 @@ services:
     container_name: bazarr
     image: "linuxserver/bazarr:latest"
     networks:
-      - internal
+      - service:tailscale
 #     networks:
 #       - mediarr
     environment:
@@ -150,7 +151,7 @@ services:
     container_name: checkrr
     image: "aetaric/checkrr:latest"
     networks:
-      - internal
+      - service:tailscale
     environment:
       - PUID=1000
       - PGID=1000
@@ -186,7 +187,7 @@ services:
     container_name: prowlarr-exporter
     image: "ghcr.io/onedr0p/exportarr:latest"
     networks:
-      - internal
+      - service:tailscale
     command: ["prowlarr"]
     environment:
       - PUID=1000
@@ -201,7 +202,7 @@ services:
     container_name: prowlarr
     image: "lscr.io/linuxserver/prowlarr:latest"
     networks:
-      - internal
+      - service:tailscale
 #     networks:
 #       - mediarr
     environment:
@@ -218,7 +219,7 @@ services:
     container_name: flaresolverr
     image: "ghcr.io/flaresolverr/flaresolverr:latest"
     networks:
-      - internal
+      - service:tailscale
     hostname: flaresolverr
 #     networks:
 #       - mediarr
@@ -233,7 +234,7 @@ services:
     container_name: duplicati
     image: "lscr.io/linuxserver/duplicati:latest"
     networks:
-      - internal
+      - service:tailscale
     environment:
       - PUID=1000
       - PGID=1000
@@ -258,7 +259,7 @@ services:
     container_name: ombi
     image: "linuxserver/ombi:latest"
     networks:
-      - internal
+      - service:tailscale
     ports:
       - 5000:5000
     environment:
@@ -271,7 +272,7 @@ services:
     container_name: plex
     image: "linuxserver/plex:latest"
     networks:
-      - internal
+      - service:tailscale
     ports:
       - 32400:32400
     environment:
@@ -307,7 +308,7 @@ services:
     container_name: wizarr
     image: ghcr.io/wizarrrr/wizarr:latest
     networks:
-      - internal
+      - service:tailscale
 #     ports:
 #       - 5690:5690
     volumes:
@@ -320,7 +321,7 @@ services:
     container_name: unpackerr
     image: "golift/unpackerr:latest"
     networks:
-      - internal
+      - service:tailscale
     environment:
       - PUID=1000
       - PGID=100
@@ -329,7 +330,7 @@ services:
     container_name: radarr
     image: lscr.io/linuxserver/radarr:latest 
     networks:
-      - internal
+      - service:tailscale
     environment: 
       - PUID=1000 
       - PGID=100 
@@ -356,7 +357,7 @@ services:
 #     image: "ghcr.io/onedr0p/exportarr:latest"
 #     command: "radarr"
 #     networks:
-#       - internal
+#       - service:tailscale
 #     environment:
 #       - URL=http://radarr:7878"
 #       - APIKEY=${RADARR_AUTHKEY}
@@ -366,7 +367,7 @@ services:
     container_name: sonarr
     image: lscr.io/linuxserver/sonarr:latest 
     networks:
-      - internal
+      - service:tailscale
     environment: 
       - PUID=1000 
       - PGID=100 
@@ -393,7 +394,7 @@ services:
 #     image: "ghcr.io/onedr0p/exportarr:latest"
 #     command: "sonarr"
 #     networks:
-#       - internal
+#       - service:tailscale
 #     depends_on:
 #       - sonarr
 #     environment:
@@ -403,6 +404,6 @@ services:
 #     ports:
 #       - "9707:9707"
 
-networks:
-  internal:
-    driver: bridge
+# networks:
+#   internal:
+#     driver: bridge
