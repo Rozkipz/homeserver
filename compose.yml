@@ -209,7 +209,7 @@ services:
     container_name: flaresolverr
     image: "ghcr.io/flaresolverr/flaresolverr:latest"
     network_mode: service:tailscale
-    hostname: flaresolverr
+#     hostname: flaresolverr
 #     networks:
 #       - mediarr
 #     ports:
