@@ -1,0 +1,108 @@
+---
+version: "1"
+services:
+  tailscale:
+    container_name: tsmill
+    hostname: tsmill
+    image: tailscale/tailscale:latest
+    volumes:
+      - ~/services/tailscale/config:/var/lib
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=${TS_HOSTNAME}
+      - TS_USERSPACE=false
+      - TS_AUTH_ONCE=false
+    command: tailscaled
+    depends_on:
+      - headscale
+    restart: unless-stopped
+
+  headscale:
+    image: headscale/headscale:latest
+    container_name: headscale
+    networks:
+      - internal
+    entrypoint: headscale serve
+    volumes:
+      - ~/services/headscale:/etc/headscale
+    environment:
+    # Maybe root?
+      - PUID=1001
+      - PGID=1001
+#     expose:
+#       - 8080
+
+  hswebui:
+    image: ghcr.io/ifargle/headscale-webui:latest
+    container_name: hswebui
+#     expose:
+#       - 5000
+    networks:
+      - internal
+    environment:
+      - COLOR=grey
+      - HS_SERVER=http://headscale:8080
+      - DOMAIN_NAME=${DOMAIN}
+      - KEY=${HS_AUTHKEY}
+      - AUTH_TYPE=basic
+      - BASIC_AUTH_USER=${BASIC_USER}
+      - BASIC_AUTH_PASS=${BASIC_PASS}
+#       - PUID=1001
+#       - PGID=1001
+#       - UID=1001
+#       - GID=1001
+#       - SCRIPT_NAME=/admin
+#       - DATA_DIRECTORY=/data
+    volumes:
+      - ~/services/headscaleui:/data  # this must be owned by user `1000:1000`
+      - ~/services/headscale:/etc/headscale/:ro
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    container_name: caddy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ~/services/caddy/data:/data
+      - ~/services/caddy/config:/config
+    networks:
+      - internal
+      - service: tailscale
+
+  rtorrent-rutorrent:
+    image: crazymax/rtorrent-rutorrent:latest
+    container_name: rtorrent-rutorrent
+    networks:
+      - internal
+#     ports:
+#       - 6881:6881/udp
+#       - 8000:8000
+#       - 8001:8080
+#       - 9000:9000
+#       - 50000:50000
+    env_file:
+      - rtorrent-rutorrent.env
+    volumes:
+      - ~/services/rtorrent/data:/data
+      - ~/services/rtorrent/downloads:/downloads
+      - ~/services/rtorrent/passwd:/passwd
+      - ~/services/rtorrent/log:/log
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 32000
+        hard: 40000
+    restart: always
+
+networks:
+  internal:
+    driver: bridge
