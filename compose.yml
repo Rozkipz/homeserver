@@ -1,10 +1,32 @@
 ---
 version: "1"
 services:
+  tailscale:
+    container_name: tsmonster
+    hostname: tsmonster
+    image: tailscale/tailscale:latest
+    networks:
+      - internal
+    volumes:
+      - ~/services/tailscale/config:/var/lib
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TS_AUTHKEY=${TS_AUTHKEY}
+    command: tailscaled
+    privileged: true
+    restart: unless-stopped
+
   dockerui:
     container_name: dockerui
     image: "otothea/docker-ui:latest"
     environment:
+    networks:
+      - internal
       - PUID=1000
       - PGID=1000
     volumes:
@@ -14,6 +36,8 @@ services:
 
   heimdall:
     image: lscr.io/linuxserver/heimdall:latest
+    networks:
+      - internal
     container_name: heimdall
     environment:
       - PUID=1000
@@ -27,6 +51,8 @@ services:
 
   wireguard:
     image: linuxserver/wireguard
+    networks:
+      - internal
     container_name: wireguard
     restart: unless-stopped
 #     networks:
@@ -39,7 +65,7 @@ services:
       - PGID=1000
     cap_add:
       - NET_ADMIN
-      - SYS_MODULE
+#       - SYS_MODULE
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
 
@@ -69,6 +95,8 @@ services:
   archivebox:
     container_name: archivebox
     image: "archivebox/archivebox:latest"
+    networks:
+      - internal
     environment:
       - PUID=1000
       - PGID=1000
@@ -80,6 +108,8 @@ services:
   bazarr:
     container_name: bazarr
     image: "linuxserver/bazarr:latest"
+    networks:
+      - internal
 #     networks:
 #       - mediarr
     environment:
@@ -118,6 +148,8 @@ services:
   checkrr:
     container_name: checkrr
     image: "aetaric/checkrr:latest"
+    networks:
+      - internal
     environment:
       - PUID=1000
       - PGID=1000
@@ -152,6 +184,8 @@ services:
   prowlarr-exporter:
     container_name: prowlarr-exporter
     image: "ghcr.io/onedr0p/exportarr:latest"
+    networks:
+      - internal
     command: ["prowlarr"]
     environment:
       - PUID=1000
@@ -165,6 +199,8 @@ services:
   prowlarr:
     container_name: prowlarr
     image: "lscr.io/linuxserver/prowlarr:latest"
+    networks:
+      - internal
 #     networks:
 #       - mediarr
     environment:
@@ -180,6 +216,8 @@ services:
   flaresolverr:
     container_name: flaresolverr
     image: "ghcr.io/flaresolverr/flaresolverr:latest"
+    networks:
+      - internal
     hostname: flaresolverr
 #     networks:
 #       - mediarr
@@ -193,6 +231,8 @@ services:
   duplicati:
     container_name: duplicati
     image: "lscr.io/linuxserver/duplicati:latest"
+    networks:
+      - internal
     environment:
       - PUID=1000
       - PGID=1000
@@ -216,6 +256,8 @@ services:
   ombi:
     container_name: ombi
     image: "linuxserver/ombi:latest"
+    networks:
+      - internal
     ports:
       - 5000:5000
     environment:
@@ -227,6 +269,8 @@ services:
   plex:
     container_name: plex
     image: "linuxserver/plex:latest"
+    networks:
+      - internal
     ports:
       - 32400:32400
     environment:
@@ -261,8 +305,10 @@ services:
   wizarr:
     container_name: wizarr
     image: ghcr.io/wizarrrr/wizarr:latest
-    ports:
-      - 5690:5690
+    networks:
+      - internal
+#     ports:
+#       - 5690:5690
     volumes:
       - ~/services/wizarr/database:/data/database
     environment:
@@ -272,8 +318,8 @@ services:
   unpackerr:
     container_name: unpackerr
     image: "golift/unpackerr:latest"
-#     networks:
-#       - mediarr
+    networks:
+      - internal
     environment:
       - PUID=1000
       - PGID=100
@@ -281,8 +327,8 @@ services:
   radarr: 
     container_name: radarr
     image: lscr.io/linuxserver/radarr:latest 
-#     networks:
-#       - mediarr
+    networks:
+      - internal
     environment: 
       - PUID=1000 
       - PGID=100 
@@ -301,23 +347,25 @@ services:
       - /mnt/drive11/TV:/drive11/Movies
     depends_on:
       - prowlarr
-    ports: 
-      - 7878:7878 
+#     ports:
+#       - 7878:7878
 
-  radarr-exporter:
-    container_name: radarr-exporter
-    image: "ghcr.io/onedr0p/exportarr:latest"
-    command: ["radarr"]
-    environment:
-      PORT: 9708
-      URL: "http://radarr:7878"
-      APIKEY: "xxx"
+#   radarr-exporter:
+#     container_name: radarr-exporter
+#     image: "ghcr.io/onedr0p/exportarr:latest"
+#     command: "radarr"
+#     networks:
+#       - internal
+#     environment:
+#       - URL=http://radarr:7878"
+#       - APIKEY=${RADARR_AUTHKEY}
+#       PORT: 9708
 
   sonarr: 
     container_name: sonarr
     image: lscr.io/linuxserver/sonarr:latest 
-#     networks:
-#       - mediarr
+    networks:
+      - internal
     environment: 
       - PUID=1000 
       - PGID=100 
@@ -336,22 +384,24 @@ services:
       - /mnt/drive11/TV:/drive11/TV
     depends_on:
       - prowlarr 
-    ports:
-      - 8989:8989
+#     ports:
+#       - 8989:8989
 
-  sonarr-exporter:
-    container_name: sonarr-exporter
-    image: "ghcr.io/onedr0p/exportarr:latest"
-    command: ["sonarr"]
-    environment:
-      PORT: 9707
-      URL: "http://sonarr:8989"
-      APIKEY: "xxx"
-    ports:
-      - "9707:9707"
+#   sonarr-exporter:
+#     container_name: sonarr-exporter
+#     image: "ghcr.io/onedr0p/exportarr:latest"
+#     command: "sonarr"
+#     networks:
+#       - internal
+#     depends_on:
+#       - sonarr
+#     environment:
+#       - URL=http://sonarr:8989
+#       - APIKEY=${SONAR_AUTHKEY}
+#       PORT: 9707
+#     ports:
+#       - "9707:9707"
 
-# networks:
-#   wireguard-net:
-#     driver: bridge
-#   mediarr:
-#     driver: bridge
+networks:
+  internal:
+    driver: bridge
