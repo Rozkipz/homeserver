@@ -30,8 +30,8 @@ services:
     network_mode: service:tailscale
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "9898:9898"
+#     ports:
+#       - "9898:9898"
 
   heimdall:
     image: lscr.io/linuxserver/heimdall:latest
@@ -42,29 +42,29 @@ services:
       - PGID=1000
     volumes:
       - ~/services/heimdall/config:/config
-    ports:
-      - 80:80
-      - 443:443
+#     ports:
+#       - 80:80
+#       - 443:443
     restart: unless-stopped
 
-  wireguard:
-    image: linuxserver/wireguard
-    network_mode: service:tailscale
-    container_name: wireguard
-    restart: unless-stopped
+#   wireguard:
+#     image: linuxserver/wireguard
+#     network_mode: service:tailscale
+#     container_name: wireguard
+#     restart: unless-stopped
 #     networks:
 #       - wireguard-net
-    volumes:
-      - ~/services/wireguard/config:/config
+#     volumes:
+#       - ~/services/wireguard/config:/config
 #       - '/lib/modules:/lib/modules:ro'
-    environment:
-      - PUID=1000
-      - PGID=1000
-    cap_add:
-      - NET_ADMIN
+#     environment:
+#       - PUID=1000
+#       - PGID=1000
+#     cap_add:
+#       - NET_ADMIN
 #       - SYS_MODULE
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
+#     sysctls:
+#       - net.ipv4.conf.all.src_valid_mark=1
 
 #   wireguard:
 #     container_name: wireguard
@@ -96,8 +96,8 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-    ports:
-      - "8000:8000"
+#     ports:
+#       - "8000:8000"
     volumes:
       - ~/services/archivebox/data/:/data/
 
@@ -110,8 +110,8 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-    ports:
-      - "6767:6767"
+#     ports:
+#       - "6767:6767"
     volumes:
       - ~/services/bazarr/config:/config
       - /mnt/drive1/TV:/drive1/TV
@@ -147,8 +147,8 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-    ports:
-      - "8585:8585"
+#     ports:
+#       - "8585:8585"
     volumes:
       - ~/services/checkrr/checkrr.yaml:/etc/checkrr.yaml
       - ~/services/checkrr/data/:/data/
@@ -186,8 +186,8 @@ services:
       - PORT=9710
       - URL="http://prowlarr:9696"
       - APIKEY="abc"
-    ports:
-     - "9710:9710"
+#     ports:
+#      - "9710:9710"
 
   prowlarr:
     container_name: prowlarr
@@ -200,8 +200,8 @@ services:
       - PGID=1000
     volumes:
       - ~/services/prowlarr/config:/config
-    ports:
-      - 9696:9696
+#     ports:
+#       - 9696:9696
     depends_on:
       - flaresolverr
 
@@ -212,8 +212,8 @@ services:
     hostname: flaresolverr
 #     networks:
 #       - mediarr
-    ports:
-      - 8191:8191
+#     ports:
+#       - 8191:8191
     environment:
         - PUID=1000
         - PGID=1000
@@ -231,8 +231,8 @@ services:
       - ~/services/duplicati/restore:/restore
       - ~/services/duplicati/backups:/backups
       - ~/services/duplicati/source:/source
-    ports:
-      - 8200:8200
+#     ports:
+#       - 8200:8200
 
 #     homer:
 #       enabled: true
@@ -247,8 +247,8 @@ services:
     container_name: ombi
     image: "linuxserver/ombi:latest"
     network_mode: service:tailscale
-    ports:
-      - 5000:5000
+#     ports:
+#       - 5000:5000
     environment:
       - PUID=1000
       - PGID=1000
@@ -259,8 +259,8 @@ services:
     container_name: plex
     image: "linuxserver/plex:latest"
     network_mode: service:tailscale
-    ports:
-      - 32400:32400
+#     ports:
+#       - 32400:32400
     environment:
       - PUID=1000
       - PGID=1000
