@@ -27,7 +27,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
@@ -35,7 +35,7 @@ services:
 
   heimdall:
     image: lscr.io/linuxserver/heimdall:latest
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     container_name: heimdall
     environment:
       - PUID=1000
@@ -49,7 +49,7 @@ services:
 
   wireguard:
     image: linuxserver/wireguard
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     container_name: wireguard
     restart: unless-stopped
 #     networks:
@@ -92,7 +92,7 @@ services:
   archivebox:
     container_name: archivebox
     image: "archivebox/archivebox:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     environment:
       - PUID=1000
       - PGID=1000
@@ -104,7 +104,7 @@ services:
   bazarr:
     container_name: bazarr
     image: "linuxserver/bazarr:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
 #     networks:
 #       - mediarr
     environment:
@@ -143,7 +143,7 @@ services:
   checkrr:
     container_name: checkrr
     image: "aetaric/checkrr:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     environment:
       - PUID=1000
       - PGID=1000
@@ -178,7 +178,7 @@ services:
   prowlarr-exporter:
     container_name: prowlarr-exporter
     image: "ghcr.io/onedr0p/exportarr:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     command: ["prowlarr"]
     environment:
       - PUID=1000
@@ -192,7 +192,7 @@ services:
   prowlarr:
     container_name: prowlarr
     image: "lscr.io/linuxserver/prowlarr:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
 #     networks:
 #       - mediarr
     environment:
@@ -208,7 +208,7 @@ services:
   flaresolverr:
     container_name: flaresolverr
     image: "ghcr.io/flaresolverr/flaresolverr:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     hostname: flaresolverr
 #     networks:
 #       - mediarr
@@ -222,7 +222,7 @@ services:
   duplicati:
     container_name: duplicati
     image: "lscr.io/linuxserver/duplicati:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     environment:
       - PUID=1000
       - PGID=1000
@@ -246,7 +246,7 @@ services:
   ombi:
     container_name: ombi
     image: "linuxserver/ombi:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     ports:
       - 5000:5000
     environment:
@@ -258,7 +258,7 @@ services:
   plex:
     container_name: plex
     image: "linuxserver/plex:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     ports:
       - 32400:32400
     environment:
@@ -293,7 +293,7 @@ services:
   wizarr:
     container_name: wizarr
     image: ghcr.io/wizarrrr/wizarr:latest
-		network_mode: service:tailscale
+    network_mode: service:tailscale
 #     ports:
 #       - 5690:5690
     volumes:
@@ -305,7 +305,7 @@ services:
   unpackerr:
     container_name: unpackerr
     image: "golift/unpackerr:latest"
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     environment:
       - PUID=1000
       - PGID=1000
@@ -313,7 +313,7 @@ services:
   radarr: 
     container_name: radarr
     image: lscr.io/linuxserver/radarr:latest 
-		network_mode: service:tailscale
+    network_mode: service:tailscale
     environment: 
       - PUID=1000 
       - PGID=1000
