@@ -17,6 +17,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=${TS_HOSTNAME}
     command: tailscaled
     privileged: true
     restart: unless-stopped
