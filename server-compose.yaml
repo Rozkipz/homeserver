@@ -19,7 +19,7 @@ services:
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=false
     command: tailscaled
-    network:
+    networks:
       - tailscale
     depends_on:
       - headscale
