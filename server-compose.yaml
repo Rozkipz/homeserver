@@ -19,8 +19,7 @@ services:
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=false
     command: tailscaled
-    networks:
-      - tailscale
+    network_mode: service:rtorrent-rutorrent
     depends_on:
       - headscale
     restart: unless-stopped
@@ -78,13 +77,13 @@ services:
       - ~/services/caddy/config:/config
     networks:
       - internal
-      - tailscale
 
   rtorrent-rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
     container_name: rtorrent-rutorrent
     networks:
       - internal
+      - tailscale
 #     ports:
 #       - 6881:6881/udp
 #       - 8000:8000
