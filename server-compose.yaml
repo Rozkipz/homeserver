@@ -21,7 +21,6 @@ services:
     command: tailscaled
     networks:
       - docker_bridge
-      - tailscale_internal
     depends_on:
       - headscale
     restart: unless-stopped
@@ -79,10 +78,7 @@ services:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data
       - ~/services/caddy/config:/config
-#     network_mode: service:tailscale
-    networks:
-      - docker_bridge
-      - tailscale_internal
+    network_mode: service:tailscale
 
   rtorrent-rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
