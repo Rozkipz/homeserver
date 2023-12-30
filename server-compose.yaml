@@ -76,8 +76,9 @@ services:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data
       - ~/services/caddy/config:/config
-    networks:
-      - internal
+    network_mode: service:tailscale
+#     networks:
+#       - internal
 
   rtorrent-rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
