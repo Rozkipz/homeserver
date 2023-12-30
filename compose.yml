@@ -243,17 +243,18 @@ services:
 #       port: 8080
 #       securityContext: {}
 
-  ombi:
-    container_name: ombi
-    image: "linuxserver/ombi:latest"
-    network_mode: service:tailscale
-#     ports:
-#       - 5000:5000
-    environment:
-      - PUID=1000
-      - PGID=1000
-    volumes:
-      - ~/services/ombi/config:/config
+#   ombi:
+#     container_name: ombi
+#     image: "linuxserver/ombi:latest"
+#     network_mode: service:tailscale
+# #     ports:
+# #       3579
+# #       - 5000:5000
+#     environment:
+#       - PUID=1000
+#       - PGID=1000
+#     volumes:
+#       - ~/services/ombi/config:/config
 
   plex:
     container_name: plex

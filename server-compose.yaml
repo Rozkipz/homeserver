@@ -24,10 +24,18 @@ services:
     depends_on:
       - headscale
     restart: unless-stopped
+
+  ombi:
+    container_name: ombi
+    image: "linuxserver/ombi:latest"
+    network_mode: service:tailscale
 #     ports:
-      # bind caddy's ports here?
-#       - 80:80
-#       - 443:443
+#       3579
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ~/services/ombi/config:/config
 
   headscale:
     image: headscale/headscale:latest
@@ -85,15 +93,15 @@ services:
       - 80:80
       - 443:443
 
-  caddy_internal:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    container_name: caddy_internal
-    volumes:
-      - ~/services/caddy_internal/Caddyfile:/etc/caddy/Caddyfile
-      - ~/services/caddy_internal/data:/data
-      - ~/services/caddy_internal/config:/config
-    network_mode: service:tailscale
+#   caddy_internal:
+#     image: caddy:2-alpine
+#     restart: unless-stopped
+#     container_name: caddy_internal
+#     volumes:
+#       - ~/services/caddy_internal/Caddyfile:/etc/caddy/Caddyfile
+#       - ~/services/caddy_internal/data:/data
+#       - ~/services/caddy_internal/config:/config
+#     network_mode: service:tailscale
 
   rtorrent-rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
