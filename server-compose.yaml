@@ -24,10 +24,10 @@ services:
     depends_on:
       - headscale
     restart: unless-stopped
-    ports:
-      # bind caddy's ports here
-      - 80:80
-      - 443:443
+#     ports:
+      # bind caddy's ports here?
+#       - 80:80
+#       - 443:443
 
   headscale:
     image: headscale/headscale:latest
@@ -48,11 +48,11 @@ services:
   hswebui:
     image: ghcr.io/ifargle/headscale-webui:latest
     container_name: hswebui
-    network_mode: service:tailscale
+#     network_mode: service:tailscale
 #     expose:
 #       - 5000
-#     networks:
-#       - docker_bridge
+    networks:
+      - docker_bridge
     environment:
       - COLOR=grey
       - HS_SERVER=http://headscale:8080
