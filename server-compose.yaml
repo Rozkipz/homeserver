@@ -32,9 +32,9 @@ services:
   headscale:
     image: headscale/headscale:latest
     container_name: headscale
-    network_mode: service:tailscale
-#     networks:
-#       - docker_bridge
+#     network_mode: service:tailscale
+    networks:
+      - docker_bridge
     entrypoint: headscale serve
     volumes:
       - ~/services/headscale:/etc/headscale
