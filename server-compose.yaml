@@ -19,6 +19,8 @@ services:
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=false
     command: tailscaled
+    network:
+      - tailscale
     depends_on:
       - headscale
     restart: unless-stopped
@@ -76,7 +78,7 @@ services:
       - ~/services/caddy/config:/config
     networks:
       - internal
-      - service: tailscale
+      - tailscale
 
   rtorrent-rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
@@ -105,4 +107,6 @@ services:
 
 networks:
   internal:
+    driver: bridge
+  tailscale:
     driver: bridge
