@@ -20,7 +20,8 @@ services:
       - TS_AUTH_ONCE=false
     command: tailscaled
     networks:
-      - internal
+      - docker_bridge
+      - tailscale_internal
     depends_on:
       - headscale
     restart: unless-stopped
@@ -31,7 +32,7 @@ services:
     image: headscale/headscale:latest
     container_name: headscale
     networks:
-      - internal
+      - docker_bridge
     entrypoint: headscale serve
     volumes:
       - ~/services/headscale:/etc/headscale
@@ -48,7 +49,7 @@ services:
 #     expose:
 #       - 5000
     networks:
-      - internal
+      - docker_bridge
     environment:
       - COLOR=grey
       - HS_SERVER=http://headscale:8080
@@ -80,14 +81,15 @@ services:
       - ~/services/caddy/config:/config
 #     network_mode: service:tailscale
     networks:
-      - internal
+      - docker_bridge
+      - tailscale_internal
 
   rtorrent-rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
     container_name: rtorrent-rutorrent
 #     networks:
-#       - internal
-    network_mode: service:tailscale
+#       - docker_bridge
+    network_mode: service:tailscale  # This is still needed to "fake" the `8080` coming from tsmill on tsmonster's side, as we aren't doing a subnet there.
 #     ports:
 #       - 6881:6881/udp
 #       - 8000:8000
@@ -109,5 +111,9 @@ services:
     restart: always
 
 networks:
-  internal:
+  tailscale_internal:
+    ipam:
+      config:
+        - subnet: 100.64.1.0/10
+  docker_bridge:
     driver: bridge
