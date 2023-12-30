@@ -74,7 +74,7 @@ services:
   caddy_external:
     image: caddy:2-alpine
     restart: unless-stopped
-    container_name: caddy
+    container_name: caddy_external
     volumes:
       - ~/services/caddy_external/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy_external/data:/data
@@ -88,7 +88,7 @@ services:
   caddy_internal:
     image: caddy:2-alpine
     restart: unless-stopped
-    container_name: caddy
+    container_name: caddy_internal
     volumes:
       - ~/services/caddy_internal/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy_internal/data:/data
