@@ -24,6 +24,8 @@ services:
     depends_on:
       - headscale
     restart: unless-stopped
+    expose:
+      - 5000  # ombi
 
   headscale:
     image: headscale/headscale:latest
