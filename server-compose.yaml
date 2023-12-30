@@ -24,8 +24,10 @@ services:
     depends_on:
       - headscale
     restart: unless-stopped
-    expose:
-      - 5000  # ombi
+    ports:
+      # bind caddy's ports here
+      - 80:80
+      - 443:443
 
   headscale:
     image: headscale/headscale:latest
@@ -71,9 +73,6 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     container_name: caddy
-    ports:
-      - 80:80
-      - 443:443
     volumes:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data
