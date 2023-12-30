@@ -32,8 +32,9 @@ services:
   headscale:
     image: headscale/headscale:latest
     container_name: headscale
-    networks:
-      - docker_bridge
+    network_mode: service:tailscale
+#     networks:
+#       - docker_bridge
     entrypoint: headscale serve
     volumes:
       - ~/services/headscale:/etc/headscale
@@ -47,10 +48,11 @@ services:
   hswebui:
     image: ghcr.io/ifargle/headscale-webui:latest
     container_name: hswebui
+    network_mode: service:tailscale
 #     expose:
 #       - 5000
-    networks:
-      - docker_bridge
+#     networks:
+#       - docker_bridge
     environment:
       - COLOR=grey
       - HS_SERVER=http://headscale:8080
@@ -69,14 +71,28 @@ services:
       - ~/services/headscaleui:/data  # this must be owned by user `1000:1000`
       - ~/services/headscale:/etc/headscale/:ro
 
-  caddy:
+  caddy_external:
     image: caddy:2-alpine
     restart: unless-stopped
     container_name: caddy
     volumes:
-      - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
-      - ~/services/caddy/data:/data
-      - ~/services/caddy/config:/config
+      - ~/services/caddy_external/Caddyfile:/etc/caddy/Caddyfile
+      - ~/services/caddy_external/data:/data
+      - ~/services/caddy_external/config:/config
+    networks:
+      - docker_bridge
+    ports:
+      - 80:80
+      - 443:443
+
+  caddy_internal:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    container_name: caddy
+    volumes:
+      - ~/services/caddy_internal/Caddyfile:/etc/caddy/Caddyfile
+      - ~/services/caddy_internal/data:/data
+      - ~/services/caddy_internal/config:/config
     network_mode: service:tailscale
 
   rtorrent-rutorrent:
@@ -106,9 +122,5 @@ services:
     restart: always
 
 networks:
-  tailscale_internal:
-    ipam:
-      config:
-        - subnet: 100.64.1.0/10
   docker_bridge:
     driver: bridge
