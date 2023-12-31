@@ -5,6 +5,8 @@ services:
     container_name: tsmonster
     hostname: tsmonster
     image: tailscale/tailscale:latest
+    network:
+      - internal
     volumes:
       - ~/services/tailscale/config:/var/lib
       - /dev/net/tun:/dev/net/tun
@@ -260,8 +262,8 @@ services:
     container_name: plex
     image: "linuxserver/plex:latest"
     network_mode: service:tailscale
-#     ports:
-#       - 32400:32400
+    ports:
+      - 32400:32400
     environment:
       - PUID=1000
       - PGID=1000
@@ -387,6 +389,6 @@ services:
 #     ports:
 #       - "9707:9707"
 
-# networks:
-#   internal:
-#     driver: bridge
+networks:
+  internal:
+    driver: bridge

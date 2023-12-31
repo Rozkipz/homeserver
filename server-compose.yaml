@@ -29,13 +29,24 @@ services:
     container_name: ombi
     image: "linuxserver/ombi:latest"
     network_mode: service:tailscale
-#     ports:
-#       3579
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=1001
+      - PGID=1001
     volumes:
       - ~/services/ombi/config:/config
+
+  sshfs:
+    container_name: sshfs
+    image: lscr.io/linuxserver/openssh-server:latest
+    network_mode: service:tailscale
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - PUBLIC_KEY_FILE=/pubkeys
+    volumes:
+      - ~/services/rtorrent/downloads:/downloads
+      - ~/services/sshfs/pubkeys:/pubkeys
+      - ~/services/sshfs/config:/config
 
   headscale:
     image: headscale/headscale:latest
