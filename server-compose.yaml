@@ -84,6 +84,10 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: caddy
+    depends_on:
+      - whitebophir
+      - ombi
+      - hswebui
     volumes:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data
