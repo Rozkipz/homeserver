@@ -34,6 +34,7 @@ services:
       - PGID=1001
     volumes:
       - ~/services/ombi/config:/config
+    restart: unless-stopped
 
   sshfs:
     container_name: sshfs
@@ -47,29 +48,24 @@ services:
       - ~/services/rtorrent/downloads:/downloads
       - ~/services/sshfs/pubkeys:/pubkeys
       - ~/services/sshfs/config:/config
+    restart: unless-stopped
 
   headscale:
     image: headscale/headscale:latest
     container_name: headscale
-#     network_mode: service:tailscale
     networks:
       - docker_bridge
     entrypoint: headscale serve
     volumes:
       - ~/services/headscale:/etc/headscale
     environment:
-    # Maybe root?
       - PUID=1001
       - PGID=1001
-#     expose:
-#       - 8080
+    restart: unless-stopped
 
   hswebui:
     image: ghcr.io/ifargle/headscale-webui:latest
     container_name: hswebui
-#     network_mode: service:tailscale
-#     expose:
-#       - 5000
     networks:
       - docker_bridge
     environment:
@@ -80,52 +76,40 @@ services:
       - AUTH_TYPE=basic
       - BASIC_AUTH_USER=${BASIC_USER}
       - BASIC_AUTH_PASS=${BASIC_PASS}
-#       - PUID=1001
-#       - PGID=1001
-#       - UID=1001
-#       - GID=1001
-#       - SCRIPT_NAME=/admin
-#       - DATA_DIRECTORY=/data
     volumes:
       - ~/services/headscaleui:/data  # this must be owned by user `1000:1000`
       - ~/services/headscale:/etc/headscale/:ro
-
-  caddy_external:
-    image: caddy:2-alpine
     restart: unless-stopped
-    container_name: caddy_external
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
     volumes:
-      - ~/services/caddy_external/Caddyfile:/etc/caddy/Caddyfile
-      - ~/services/caddy_external/data:/data
-      - ~/services/caddy_external/config:/config
+      - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ~/services/caddy/data:/data
+      - ~/services/caddy/config:/config
     networks:
       - docker_bridge
     ports:
       - 80:80
       - 443:443
+    restart: unless-stopped
 
-#   caddy_internal:
-#     image: caddy:2-alpine
-#     restart: unless-stopped
-#     container_name: caddy_internal
-#     volumes:
-#       - ~/services/caddy_internal/Caddyfile:/etc/caddy/Caddyfile
-#       - ~/services/caddy_internal/data:/data
-#       - ~/services/caddy_internal/config:/config
-#     network_mode: service:tailscale
+  whitebophir:
+    image: lovasoa/wbo:latest 
+    container_name: whitebophir
+    networks:
+      - docker_bridge
+    volumes:
+      - ~/services/whitebophir:/opt/app
+    ports:
+      - 5000:80
+    restart: unless-stopped
 
   rtorrent-rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
     container_name: rtorrent-rutorrent
-#     networks:
-#       - docker_bridge
     network_mode: service:tailscale  # This is still needed to "fake" the `8080` coming from tsmill on tsmonster's side, as we aren't doing a subnet there.
-#     ports:
-#       - 6881:6881/udp
-#       - 8000:8000
-#       - 8001:8080
-#       - 9000:9000
-#       - 50000:50000
     env_file:
       - rtorrent-rutorrent.env
     volumes:
@@ -138,7 +122,7 @@ services:
       nofile:
         soft: 32000
         hard: 40000
-    restart: always
+    restart: unless-stopped
 
 networks:
   docker_bridge:
