@@ -5,7 +5,7 @@ services:
     container_name: tsmonster
     hostname: tsmonster
     image: tailscale/tailscale:latest
-    network:
+    networks:
       - internal
     volumes:
       - ~/services/tailscale/config:/var/lib
@@ -207,7 +207,9 @@ services:
   plex:
     container_name: plex
     image: "linuxserver/plex:latest"
-    network_mode: service:tailscale
+    #network_mode: service:tailscale
+    networks:
+      - internal
     ports:
       - 32400:32400
     environment:
