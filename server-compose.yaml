@@ -85,7 +85,6 @@ services:
     image: caddy:2-alpine
     container_name: caddy
     depends_on:
-      - whitebophir
       - ombi
       - hswebui
     volumes:
