@@ -99,19 +99,11 @@ services:
       - 443:443
     restart: unless-stopped
 
-  whitebophir:
-    image: lovasoa/wbo:latest 
-    container_name: whitebophir
-    networks:
-      - docker_bridge
-    volumes:
-      - ~/services/whitebophir:/opt/app/server-data
-    restart: unless-stopped
-
-  rtorrent-rutorrent:
+  rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
-    container_name: rtorrent-rutorrent
-    network_mode: service:tailscale  # This is still needed to "fake" the `8080` coming from tsmill on tsmonster's side, as we aren't doing a subnet there.
+    container_name: rutorrent
+#     network_mode: service:tailscale  # can make the dashboard public if needed, it has pw auth.
+    PORT: 50000
     env_file:
       - rtorrent-rutorrent.env
     volumes:
@@ -119,11 +111,6 @@ services:
       - ~/services/rtorrent/downloads:/downloads
       - ~/services/rtorrent/passwd:/passwd
       - ~/services/rtorrent/log:/log
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 32000
-        hard: 40000
     restart: unless-stopped
 
 networks:
