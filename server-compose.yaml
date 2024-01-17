@@ -103,8 +103,10 @@ services:
     image: crazymax/rtorrent-rutorrent:latest
     container_name: rutorrent
 #     network_mode: service:tailscale  # can make the dashboard public if needed, it has pw auth.
+    networks:
+      - docker_bridge
     ports:
-      - 8080:8080
+#       - 8080:8080
       - 50000:50000
     env_file:
       - rtorrent-rutorrent.env
