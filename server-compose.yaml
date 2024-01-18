@@ -91,7 +91,7 @@ services:
     depends_on:
       - ombi
       - hswebui
-      - rutorrent
+      #- rutorrent
     volumes:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data
