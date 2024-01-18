@@ -23,6 +23,15 @@ services:
     command: tailscaled
     restart: unless-stopped
 
+  sshfs:
+    container_name: sshfs
+    network_mode: service:tailscale
+    build: ./charts/sshfs/
+    volumes:
+      - ~/services/sshfs/privkey:/privkey
+      - /mnt/remote/downloads:/downloads
+    command: "sshfs root@tsmill.r.internal.rowan.sh:2222:/downloads /downloads -o IdentityFile=/privkey/monster.pem -o StrictHostKeyChecking=no"
+
   dockerui:
     container_name: dockerui
     image: "otothea/docker-ui:latest"
