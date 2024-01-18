@@ -30,7 +30,7 @@ services:
     volumes:
       - ~/services/sshfs/privkey:/privkey
       - /mnt/remote/downloads:/downloads
-    command: "sshfs root@tsmill.r.internal.rowan.sh:2222:/downloads /downloads -o IdentityFile=/privkey/monster.pem -o StrictHostKeyChecking=no"
+    command: "sshfs rowan@tsmill.r.internal.rowan.sh:/downloads /downloads -p 2222 -o IdentityFile=/privkey/monster.pem -o allow_other -o StrictHostKeyChecking=no"
 
   dockerui:
     container_name: dockerui
