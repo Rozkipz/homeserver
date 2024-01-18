@@ -43,6 +43,7 @@ services:
     environment:
       - PUID=1001
       - PGID=1001
+      - USER_NAME=rowan
       - PUBLIC_KEY_FILE=/pubkeys
     volumes:
       - ~/services/rtorrent/downloads:/downloads
