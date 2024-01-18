@@ -100,23 +100,23 @@ services:
       - 443:443
     restart: unless-stopped
 
-  rutorrent:
-    image: crazymax/rtorrent-rutorrent:latest
-    container_name: rutorrent
-#     network_mode: service:tailscale  # can make the dashboard public if needed, it has pw auth.
-    networks:
-      - docker_bridge
-    ports:
-#       - 8080:8080
-      - 50000:50000
-    env_file:
-      - rtorrent-rutorrent.env
-    volumes:
-      - ~/services/rtorrent/data:/data
-      - ~/services/rtorrent/downloads:/downloads
-      - ~/services/rtorrent/passwd:/passwd
-      - ~/services/rtorrent/log:/log
-    restart: unless-stopped
+#   rutorrent:
+#     image: crazymax/rtorrent-rutorrent:latest
+#     container_name: rutorrent
+# #     network_mode: service:tailscale  # can make the dashboard public if needed, it has pw auth.
+#     networks:
+#       - docker_bridge
+#     ports:
+# #       - 8080:8080
+#       - 50000:50000
+#     env_file:
+#       - rtorrent-rutorrent.env
+#     volumes:
+#       - ~/services/rtorrent/data:/data
+#       - ~/services/rtorrent/downloads:/downloads
+#       - ~/services/rtorrent/passwd:/passwd
+#       - ~/services/rtorrent/log:/log
+#     restart: unless-stopped
 
 networks:
   docker_bridge:
