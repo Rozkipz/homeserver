@@ -36,24 +36,6 @@ services:
       - ~/services/ombi/config:/config
     restart: unless-stopped
 
-  sshfs:
-    container_name: sshfs
-    image: lscr.io/linuxserver/openssh-server:latest
-    network_mode: service:tailscale
-    environment:
-      - PUID=1001
-      - PGID=1001
-      - USER_NAME=rowan
-      - PASSWORD_ACCESS==true
-      - LOG_STDOUT=true
-      - USER_PASSWORD=testpassword
-      #- PUBLIC_KEY_FILE=/pubkeys
-    volumes:
-      - ~/services/rtorrent/downloads:/downloads
-      - ~/services/sshfs/pubkeys:/pubkeys
-      - ~/services/sshfs/config:/config
-    restart: unless-stopped
-
   headscale:
     image: headscale/headscale:latest
     container_name: headscale
@@ -103,23 +85,23 @@ services:
       - 443:443
     restart: unless-stopped
 
-#   rutorrent:
-#     image: crazymax/rtorrent-rutorrent:latest
-#     container_name: rutorrent
-# #     network_mode: service:tailscale  # can make the dashboard public if needed, it has pw auth.
-#     networks:
-#       - docker_bridge
-#     ports:
-# #       - 8080:8080
-#       - 50000:50000
-#     env_file:
-#       - rtorrent-rutorrent.env
-#     volumes:
-#       - ~/services/rtorrent/data:/data
-#       - ~/services/rtorrent/downloads:/downloads
-#       - ~/services/rtorrent/passwd:/passwd
-#       - ~/services/rtorrent/log:/log
-#     restart: unless-stopped
+  rutorrent:
+    image: crazymax/rtorrent-rutorrent:latest
+    container_name: rutorrent
+#     network_mode: service:tailscale  # can make the dashboard public if needed, it has pw auth.
+    networks:
+      - docker_bridge
+    ports:
+#       - 8080:8080
+      - 50000:50000
+    env_file:
+      - rtorrent-rutorrent.env
+    volumes:
+      - ~/services/rtorrent/data:/data
+      - ~/services/rtorrent/downloads:/downloads
+      - ~/services/rtorrent/passwd:/passwd
+      - ~/services/rtorrent/log:/log
+    restart: unless-stopped
 
 networks:
   docker_bridge:

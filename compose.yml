@@ -23,24 +23,6 @@ services:
     command: tailscaled
     restart: unless-stopped
 
-  sshfs:
-    security_opt:
-      - apparmor:unconfined
-    container_name: sshfs
-    network_mode: service:tailscale
-    build: ./charts/sshfs/
-    depends_on:
-      - tailscale
-    cap_add:
-      - sys_admin
-    devices:
-      - /dev/fuse
-    volumes:
-      - ~/services/sshfs/privkey:/privkey
-      - /mnt/remote/downloads:/downloads
-    command: "sshfs rowan@tsmill.r.internal.rowan.sh:/downloads /downloads -p 2222 -o IdentityFile=/privkey/monster.pem -o allow_other -o StrictHostKeyChecking=no"
-    restart: unless-stopped
-
   dockerui:
     container_name: dockerui
     image: "otothea/docker-ui:latest"
