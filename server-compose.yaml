@@ -44,6 +44,8 @@ services:
       - PUID=1001
       - PGID=1001
       - USER_NAME=rowan
+      - PASSWORD_ACCESS==true
+      - LOG_STDOUT=true
       - USER_PASSWORD=testpassword
       #- PUBLIC_KEY_FILE=/pubkeys
     volumes:
