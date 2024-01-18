@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 
   sshfs:
-    security-opt:
+    security_opt:
       - apparmor:unconfined
     container_name: sshfs
     network_mode: service:tailscale
