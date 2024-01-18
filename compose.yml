@@ -27,6 +27,8 @@ services:
     container_name: sshfs
     network_mode: service:tailscale
     build: ./charts/sshfs/
+    depends_on:
+      - tailscale
     cap_add:
       - sys_admin
     devices:
