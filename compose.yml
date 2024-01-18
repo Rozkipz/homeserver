@@ -27,7 +27,10 @@ services:
     container_name: sshfs
     network_mode: service:tailscale
     build: ./charts/sshfs/
+    cap_add:
+      - sys_admin
     volumes:
+      - /dev/fuse:/dev/fuse
       - ~/services/sshfs/privkey:/privkey
       - /mnt/remote/downloads:/downloads
     command: "sshfs rowan@tsmill.r.internal.rowan.sh:/downloads /downloads -p 2222 -o IdentityFile=/privkey/monster.pem -o allow_other -o StrictHostKeyChecking=no"
