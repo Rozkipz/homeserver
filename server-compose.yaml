@@ -23,7 +23,7 @@ services:
       - docker_bridge
     depends_on:
       - headscale
-    restart: unless-stopped
+    restart: always
 
   ombi:
     container_name: ombi
@@ -34,7 +34,7 @@ services:
       - PGID=1001
     volumes:
       - ~/services/ombi/config:/config
-    restart: unless-stopped
+    restart: always
 
   headscale:
     image: headscale/headscale:latest
@@ -47,7 +47,7 @@ services:
     environment:
       - PUID=1001
       - PGID=1001
-    restart: unless-stopped
+    restart: always
 
   hswebui:
     image: ghcr.io/ifargle/headscale-webui:latest
@@ -65,7 +65,7 @@ services:
     volumes:
       - ~/services/headscaleui:/data  # this must be owned by user `1000:1000`
       - ~/services/headscale:/etc/headscale/:ro
-    restart: unless-stopped
+    restart: always
 
   caddy:
     image: caddy:2-alpine
@@ -73,7 +73,7 @@ services:
     depends_on:
       - ombi
       - hswebui
-      #- rutorrent
+      - rutorrent
     volumes:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data
@@ -83,7 +83,7 @@ services:
     ports:
       - 80:80
       - 443:443
-    restart: unless-stopped
+    restart: always
 
   rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
@@ -101,7 +101,7 @@ services:
       - ~/services/rtorrent/downloads:/downloads
       - ~/services/rtorrent/passwd:/passwd
       - ~/services/rtorrent/log:/log
-    restart: unless-stopped
+    restart: always
 
 networks:
   docker_bridge:

@@ -21,7 +21,7 @@ services:
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=false
     command: tailscaled
-    restart: unless-stopped
+    restart: always
 
   dockerui:
     container_name: dockerui
@@ -47,7 +47,7 @@ services:
 #     ports:
 #       - 80:80
 #       - 443:443
-#     restart: unless-stopped
+#     restart: always
 
 #   whitebophir:
 #     image: lovasoa/wbo:latest
@@ -56,7 +56,7 @@ services:
 #       - docker_bridge
 #     volumes:
 #       - ~/services/whitebophir:/opt/app/server-data
-#     restart: unless-stopped
+#     restart: always
 
 #   archivebox:
 #     container_name: archivebox
@@ -69,6 +69,7 @@ services:
 # #       - "8000:8000"
 #     volumes:
 #       - ~/services/archivebox/data/:/data/
+#     restart: always
 
 #   bazarr:
 #     container_name: bazarr
@@ -106,6 +107,7 @@ services:
 #     depends_on:
 #       - sonarr
 #       - radarr
+#     restart: always
 
 #   checkrr:
 #     container_name: checkrr
@@ -141,6 +143,7 @@ services:
 #       - /mnt/drive10/TV:/drive10/Movies
 #       - /mnt/drive11/TV:/drive11/TV
 #       - /mnt/drive11/TV:/drive11/Movies
+#     restart: always
 
 #   prowlarr-exporter:
 #     container_name: prowlarr-exporter
@@ -155,6 +158,7 @@ services:
 #       - APIKEY="abc"
 #     ports:
 #      - "9710:9710"
+#     restart: always
 
   prowlarr:
     container_name: prowlarr
@@ -169,6 +173,7 @@ services:
 #       - 9696:9696
     depends_on:
       - flaresolverr
+#     restart: always
 
   flaresolverr:
     container_name: flaresolverr
@@ -179,6 +184,7 @@ services:
     environment:
         - PUID=1000
         - PGID=1000
+#     restart: always
 
 #   duplicati:
 #     container_name: duplicati
@@ -194,6 +200,7 @@ services:
 #       - ~/services/duplicati/source:/source
 #     ports:
 #       - 8200:8200
+#     restart: always
 
 #     homer:
 #       enabled: true
@@ -203,6 +210,7 @@ services:
 #       pullPolicy: Always
 #       port: 8080
 #       securityContext: {}
+#     restart: always
 
   plex:
     container_name: plex
@@ -240,6 +248,7 @@ services:
       - /mnt/drive10/TV:/drive10/Movies
       - /mnt/drive11/TV:/drive11/TV
       - /mnt/drive11/TV:/drive11/Movies
+    restart: always
 
 #   wizarr:
 #     container_name: wizarr
@@ -252,6 +261,7 @@ services:
 #     environment:
 #       - PUID=1000
 #       - PGID=1000
+#     restart: always
 
 #   unpackerr:
 #     container_name: unpackerr
@@ -260,6 +270,7 @@ services:
 #     environment:
 #       - PUID=1000
 #       - PGID=1000
+#     restart: always
 
   radarr: 
     container_name: radarr
@@ -285,6 +296,7 @@ services:
       - prowlarr
 #     ports:
 #       - 7878:7878
+#     restart: always
 
 #   radarr-exporter:
 #     container_name: radarr-exporter
@@ -296,6 +308,7 @@ services:
 #       - URL=http://radarr:7878"
 #       - APIKEY=${RADARR_AUTHKEY}
 #     PORT: 9708
+#     restart: always
 
   sonarr: 
     container_name: sonarr
@@ -321,6 +334,7 @@ services:
       - prowlarr 
 #     ports:
 #       - 8989:8989
+#     restart: always
 
 #   sonarr-exporter:
 #     container_name: sonarr-exporter
@@ -336,6 +350,7 @@ services:
 #       PORT: 9707
 #     ports:
 #       - "9707:9707"
+#     restart: always
 
 networks:
   internal:
