@@ -267,6 +267,8 @@ services:
 #     container_name: unpackerr
 #     image: "golift/unpackerr:latest"
 #     network_mode: service:tailscale
+#     volumes:
+#       - /mnt/remote/:/downloads
 #     environment:
 #       - PUID=1000
 #       - PGID=1000
@@ -292,6 +294,7 @@ services:
       - /mnt/drive9/TV:/drive9/Movies
       - /mnt/drive10/TV:/drive10/Movies
       - /mnt/drive11/TV:/drive11/Movies
+      - /mnt/remote/:/downloads
     depends_on:
       - prowlarr
 #     ports:
@@ -330,6 +333,7 @@ services:
       - /mnt/drive9/TV:/drive9/TV
       - /mnt/drive10/TV:/drive10/TV
       - /mnt/drive11/TV:/drive11/TV
+      - /mnt/remote/:/downloads
     depends_on:
       - prowlarr 
 #     ports:
