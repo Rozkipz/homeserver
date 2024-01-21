@@ -23,6 +23,13 @@ services:
     command: tailscaled
     restart: always
 
+  toolbarr:
+    container_name: toolbarr
+    build: ./images/toolbarr/
+    environment:
+      - PUID=1000
+      - PGID=1000
+
   dockerui:
     container_name: dockerui
     image: "otothea/docker-ui:latest"
