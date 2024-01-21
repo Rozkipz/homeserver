@@ -264,7 +264,7 @@ services:
     network_mode: service:tailscale
     volumes:
       - ~/services/unpackerr/config:/config
-      - /mnt/remote/:/downloads
+      - /mnt/remote/:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
     environment:
       - PUID=1000
       - PGID=1000
@@ -293,7 +293,7 @@ services:
       - /mnt/drive9/Movies:/Movies9
       - /mnt/drive10/Movies:/Movies10
       - /mnt/drive11/Movies:/Movies11
-      - /mnt/remote/:/downloads
+      - /mnt/remote/:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
     depends_on:
       - prowlarr
     restart: always
@@ -330,7 +330,7 @@ services:
       - /mnt/drive9/TV:/TV9
       - /mnt/drive10/TV:/TV10
       - /mnt/drive11/TV:/TV11
-      - /mnt/remote/:/downloads/complete
+      - /mnt/remote/:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
     depends_on:
       - prowlarr 
     restart: always
