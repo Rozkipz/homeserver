@@ -93,6 +93,8 @@ services:
       - docker_bridge
     ports:
 #       - 8080:8080
+      - 6881:6881
+      - 8000:8000
       - 50000:50000
     env_file:
       - rtorrent-rutorrent.env
