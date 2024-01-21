@@ -37,7 +37,7 @@ services:
 
 #   heimdall:
 #     image: lscr.io/linuxserver/heimdall:latest
-#     network_mode: service:tailscale
+#     network_mode: service:tailscale  # fairly sure this is not needed and will cause issues with PF below. Only want this locally anyway really.
 #     container_name: heimdall
 #     environment:
 #       - PUID=1000
@@ -169,22 +169,18 @@ services:
       - PGID=1000
     volumes:
       - ~/services/prowlarr/config:/config
-#     ports:
-#       - 9696:9696
     depends_on:
       - flaresolverr
-#     restart: always
+    restart: always
 
   flaresolverr:
     container_name: flaresolverr
     image: "ghcr.io/flaresolverr/flaresolverr:latest"
     network_mode: service:tailscale
-#     ports:
-#       - 8191:8191
     environment:
         - PUID=1000
         - PGID=1000
-#     restart: always
+    restart: always
 
 #   duplicati:
 #     container_name: duplicati
@@ -215,7 +211,6 @@ services:
   plex:
     container_name: plex
     image: "linuxserver/plex:latest"
-    #network_mode: service:tailscale
     networks:
       - internal
     ports:
@@ -263,16 +258,17 @@ services:
 #       - PGID=1000
 #     restart: always
 
-#   unpackerr:
-#     container_name: unpackerr
-#     image: "golift/unpackerr:latest"
-#     network_mode: service:tailscale
-#     volumes:
-#       - /mnt/remote/:/downloads
-#     environment:
-#       - PUID=1000
-#       - PGID=1000
-#     restart: always
+  unpackerr:
+    container_name: unpackerr
+    image: "golift/unpackerr:latest"
+    network_mode: service:tailscale
+    volumes:
+      - ~/services/unpackerr/config:/config
+      - /mnt/remote/:/downloads
+    environment:
+      - PUID=1000
+      - PGID=1000
+    restart: always
 
   radarr: 
     container_name: radarr
@@ -283,23 +279,21 @@ services:
       - PGID=1000
     volumes:
       - ~/services/radarr/config:/config
-      - /mnt/drive1/TV:/drive1/Movies
-      - /mnt/drive2/TV:/drive2/Movies
-      - /mnt/drive3/TV:/drive3/Movies
-      - /mnt/drive4/TV:/drive4/Movies
-      - /mnt/drive5/TV:/drive5/Movies
-      - /mnt/drive6/TV:/drive6/Movies
-      - /mnt/drive7/TV:/drive7/Movies
-      - /mnt/drive8/TV:/drive8/Movies
-      - /mnt/drive9/TV:/drive9/Movies
-      - /mnt/drive10/TV:/drive10/Movies
-      - /mnt/drive11/TV:/drive11/Movies
+      - /mnt/drive1/Movies:/Movies1
+      - /mnt/drive2/Movies:/Movies2
+      - /mnt/drive3/Movies:/Movies3
+      - /mnt/drive4/Movies:/Movies4
+      - /mnt/drive5/Movies:/Movies5
+      - /mnt/drive6/Movies:/Movies6
+      - /mnt/drive7/Movies:/Movies7
+      - /mnt/drive8/Movies:/Movies8
+      - /mnt/drive9/Movies:/Movies9
+      - /mnt/drive10/Movies:/Movies10
+      - /mnt/drive11/Movies:/Movies11
       - /mnt/remote/:/downloads
     depends_on:
       - prowlarr
-#     ports:
-#       - 7878:7878
-#     restart: always
+    restart: always
 
 #   radarr-exporter:
 #     container_name: radarr-exporter
@@ -322,23 +316,21 @@ services:
       - PGID=1000
     volumes:
       - ~/services/sonarr/config:/config
-      - /mnt/drive1/TV:/drive1/TV
-      - /mnt/drive2/TV:/drive2/TV
-      - /mnt/drive3/TV:/drive3/TV
-      - /mnt/drive4/TV:/drive4/TV
-      - /mnt/drive5/TV:/drive5/TV
-      - /mnt/drive6/TV:/drive6/TV
-      - /mnt/drive7/TV:/drive7/TV
-      - /mnt/drive8/TV:/drive8/TV
-      - /mnt/drive9/TV:/drive9/TV
-      - /mnt/drive10/TV:/drive10/TV
-      - /mnt/drive11/TV:/drive11/TV
+      - /mnt/drive1/TV:/TV1
+      - /mnt/drive2/TV:/TV2
+      - /mnt/drive3/TV:/TV3
+      - /mnt/drive4/TV:/TV4
+      - /mnt/drive5/TV:/TV5
+      - /mnt/drive6/TV:/TV6
+      - /mnt/drive7/TV:/TV7
+      - /mnt/drive8/TV:/TV8
+      - /mnt/drive9/TV:/TV9
+      - /mnt/drive10/TV:/TV10
+      - /mnt/drive11/TV:/TV11
       - /mnt/remote/:/downloads
     depends_on:
       - prowlarr 
-#     ports:
-#       - 8989:8989
-#     restart: always
+    restart: always
 
 #   sonarr-exporter:
 #     container_name: sonarr-exporter
