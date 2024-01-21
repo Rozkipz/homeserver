@@ -330,7 +330,7 @@ services:
       - /mnt/drive9/TV:/TV9
       - /mnt/drive10/TV:/TV10
       - /mnt/drive11/TV:/TV11
-      - /mnt/remote/:/downloads
+      - /mnt/remote/:/downloads/complete
     depends_on:
       - prowlarr 
     restart: always
