@@ -258,22 +258,7 @@ services:
 #       - PGID=1000
 #     restart: always
 
-  unpackerr:
-    container_name: unpackerr
-    image: "golift/unpackerr:latest"
-    network_mode: service:tailscale
-    volumes:
-      - ~/services/unpackerr/config:/config
-      - /mnt/remote/:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
-    environment:
-      - PUID=1000
-      - PGID=1000
-    depends_on:
-      - sonarr
-      - radarr
-    restart: always
-
-  radarr: 
+  radarr:
     container_name: radarr
     image: lscr.io/linuxserver/radarr:latest 
     network_mode: service:tailscale

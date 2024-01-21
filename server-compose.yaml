@@ -85,14 +85,26 @@ services:
       - 443:443
     restart: always
 
+  unpackerr:
+    container_name: unpackerr
+    image: "golift/unpackerr:latest"
+    network_mode: service:tailscale
+    volumes:
+      - ~/services/unpackerr/config:/config
+      - ~/services/rtorrent/downloads:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
+    environment:
+      - PUID=1000
+      - PGID=1000
+    depends_on:
+      - tailscale
+    restart: always
+
   rutorrent:
     image: crazymax/rtorrent-rutorrent:latest
     container_name: rutorrent
-#     network_mode: service:tailscale  # can make the dashboard public if needed, it has pw auth.
     networks:
       - docker_bridge
     ports:
-#       - 8080:8080
       - 6881:6881
       - 8000:8000
       - 50000:50000
