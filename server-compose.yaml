@@ -91,7 +91,7 @@ services:
     network_mode: service:tailscale
     volumes:
       - ~/services/unpackerr/config:/config
-      - ~/services/rtorrent/downloads:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
+      - ~/services/rtorrent/downloads/complete:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
     environment:
       - PUID=1000
       - PGID=1000
