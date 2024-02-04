@@ -120,8 +120,7 @@ services:
 #       - "8585:8585"
     volumes:
       - ~/services/checkrr/checkrr.yaml:/etc/checkrr.yaml
-      - ~/services/checkrr/data/:/data/
-      - ~/services/plex/data:/data
+      - ~/services/checkrr/checkrr.db:/checkrr.db
       - /mnt/drive1/TV:/TV1
       - /mnt/drive1/Movies:/Movies1
       - /mnt/drive2/TV:/TV2
