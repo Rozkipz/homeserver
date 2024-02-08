@@ -82,28 +82,28 @@ services:
 #       - "6767:6767"
     volumes:
       - ~/services/bazarr/config:/config
-      - /mnt/drive1/TV:/drive1/TV
-      - /mnt/drive1/TV:/drive1/Movies
-      - /mnt/drive2/TV:/drive2/TV
-      - /mnt/drive2/TV:/drive2/Movies
-      - /mnt/drive3/TV:/drive3/TV
-      - /mnt/drive3/TV:/drive3/Movies
-      - /mnt/drive4/TV:/drive4/TV
-      - /mnt/drive4/TV:/drive4/Movies
-      - /mnt/drive5/TV:/drive5/TV
-      - /mnt/drive5/TV:/drive5/Movies
-      - /mnt/drive6/TV:/drive6/TV
-      - /mnt/drive6/TV:/drive6/Movies
-      - /mnt/drive7/TV:/drive7/TV
-      - /mnt/drive7/TV:/drive7/Movies
-      - /mnt/drive8/TV:/drive8/TV
-      - /mnt/drive8/TV:/drive8/Movies
-      - /mnt/drive9/TV:/drive9/TV
-      - /mnt/drive9/TV:/drive9/Movies
-      - /mnt/drive10/TV:/drive10/TV
-      - /mnt/drive10/TV:/drive10/Movies
-      - /mnt/drive11/TV:/drive11/TV
-      - /mnt/drive11/TV:/drive11/Movies
+      - /mnt/drive1/TV:/TV1
+      - /mnt/drive1/Movies:/Movies1
+      - /mnt/drive2/TV:/TV2
+      - /mnt/drive2/Movies:/Movies2
+      - /mnt/drive3/TV:/TV3
+      - /mnt/drive3/Movies:/Movies3
+      - /mnt/drive4/TV:/TV4
+      - /mnt/drive4/Movies:/Movies4
+      - /mnt/drive5/TV:/TV5
+      - /mnt/drive5/Movies:/Movies5
+      - /mnt/drive6/TV:/TV6
+      - /mnt/drive6/Movies:/Movies6
+      - /mnt/drive7/TV:/TV7
+      - /mnt/drive7/Movies:/Movies7
+      - /mnt/drive8/TV:/TV8
+      - /mnt/drive8/Movies:/Movies8
+      - /mnt/drive9/TV:/TV9
+      - /mnt/drive9/Movies:/Movies9
+      - /mnt/drive10/TV:/TV10
+      - /mnt/drive10/Movies:/Movies10
+      - /mnt/drive11/TV:/TV11
+      - /mnt/drive11/Movies:/Movies11
     depends_on:
       - sonarr
       - radarr
