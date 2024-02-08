@@ -35,19 +35,19 @@ services:
 #     ports:
 #       - "9898:9898"
 
-#   heimdall:
-#     image: lscr.io/linuxserver/heimdall:latest
-#     network_mode: service:tailscale  # fairly sure this is not needed and will cause issues with PF below. Only want this locally anyway really.
-#     container_name: heimdall
-#     environment:
-#       - PUID=1000
-#       - PGID=1000
-#     volumes:
-#       - ~/services/heimdall/config:/config
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:latest
+    network_mode: service:tailscale
+    container_name: heimdall
+    environment:
+      - PUID=1000
+      - PGID=1000
 #     ports:
 #       - 80:80
 #       - 443:443
-#     restart: always
+    volumes:
+      - ~/services/heimdall/config:/config
+    restart: always
 
 #   whitebophir:
 #     image: lovasoa/wbo:latest
@@ -58,56 +58,56 @@ services:
 #       - ~/services/whitebophir:/opt/app/server-data
 #     restart: always
 
-#   archivebox:
-#     container_name: archivebox
-#     image: "archivebox/archivebox:latest"
-#     network_mode: service:tailscale
-#     environment:
-#       - PUID=1000
-#       - PGID=1000
-# #     ports:
-# #       - "8000:8000"
-#     volumes:
-#       - ~/services/archivebox/data/:/data/
-#     restart: always
+  archivebox:
+    container_name: archivebox
+    image: "archivebox/archivebox:latest"
+    network_mode: service:tailscale
+    environment:
+      - PUID=1000
+      - PGID=1000
+#     ports:
+#       - "8000:8000"
+    volumes:
+      - ~/services/archivebox/data/:/data/
+    restart: always
 
-#   bazarr:
-#     container_name: bazarr
-#     image: "linuxserver/bazarr:latest"
-#     network_mode: service:tailscale
-#     environment:
-#       - PUID=1000
-#       - PGID=1000
+  bazarr:
+    container_name: bazarr
+    image: "linuxserver/bazarr:latest"
+    network_mode: service:tailscale
+    environment:
+      - PUID=1000
+      - PGID=1000
 #     ports:
 #       - "6767:6767"
-#     volumes:
-#       - ~/services/bazarr/config:/config
-#       - /mnt/drive1/TV:/drive1/TV
-#       - /mnt/drive1/TV:/drive1/Movies
-#       - /mnt/drive2/TV:/drive2/TV
-#       - /mnt/drive2/TV:/drive2/Movies
-#       - /mnt/drive3/TV:/drive3/TV
-#       - /mnt/drive3/TV:/drive3/Movies
-#       - /mnt/drive4/TV:/drive4/TV
-#       - /mnt/drive4/TV:/drive4/Movies
-#       - /mnt/drive5/TV:/drive5/TV
-#       - /mnt/drive5/TV:/drive5/Movies
-#       - /mnt/drive6/TV:/drive6/TV
-#       - /mnt/drive6/TV:/drive6/Movies
-#       - /mnt/drive7/TV:/drive7/TV
-#       - /mnt/drive7/TV:/drive7/Movies
-#       - /mnt/drive8/TV:/drive8/TV
-#       - /mnt/drive8/TV:/drive8/Movies
-#       - /mnt/drive9/TV:/drive9/TV
-#       - /mnt/drive9/TV:/drive9/Movies
-#       - /mnt/drive10/TV:/drive10/TV
-#       - /mnt/drive10/TV:/drive10/Movies
-#       - /mnt/drive11/TV:/drive11/TV
-#       - /mnt/drive11/TV:/drive11/Movies
-#     depends_on:
-#       - sonarr
-#       - radarr
-#     restart: always
+    volumes:
+      - ~/services/bazarr/config:/config
+      - /mnt/drive1/TV:/drive1/TV
+      - /mnt/drive1/TV:/drive1/Movies
+      - /mnt/drive2/TV:/drive2/TV
+      - /mnt/drive2/TV:/drive2/Movies
+      - /mnt/drive3/TV:/drive3/TV
+      - /mnt/drive3/TV:/drive3/Movies
+      - /mnt/drive4/TV:/drive4/TV
+      - /mnt/drive4/TV:/drive4/Movies
+      - /mnt/drive5/TV:/drive5/TV
+      - /mnt/drive5/TV:/drive5/Movies
+      - /mnt/drive6/TV:/drive6/TV
+      - /mnt/drive6/TV:/drive6/Movies
+      - /mnt/drive7/TV:/drive7/TV
+      - /mnt/drive7/TV:/drive7/Movies
+      - /mnt/drive8/TV:/drive8/TV
+      - /mnt/drive8/TV:/drive8/Movies
+      - /mnt/drive9/TV:/drive9/TV
+      - /mnt/drive9/TV:/drive9/Movies
+      - /mnt/drive10/TV:/drive10/TV
+      - /mnt/drive10/TV:/drive10/Movies
+      - /mnt/drive11/TV:/drive11/TV
+      - /mnt/drive11/TV:/drive11/Movies
+    depends_on:
+      - sonarr
+      - radarr
+    restart: always
 
   checkrr:
     container_name: checkrr
