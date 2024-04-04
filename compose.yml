@@ -211,8 +211,7 @@ services:
   filegator:
     container_name: filegator
     image: "filegator/filegator"
-    networks:
-      - internal
+    network_mode: service:tailscale
     restart: always
     environment:
       - PUID=1000
