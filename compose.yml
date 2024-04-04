@@ -208,11 +208,44 @@ services:
 #       securityContext: {}
 #     restart: always
 
+  filegator:
+    container_name: filegator
+    image: "filegator/filegator"
+    networks:
+      - internal
+    restart: always
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 8080:8080
+    volumes:
+      - /mnt/drive1:/var/www/filegator/repository/drive1
+      - /mnt/drive2:/var/www/filegator/repository/drive2
+      - /mnt/drive3:/var/www/filegator/repository/drive3
+      - /mnt/drive4:/var/www/filegator/repository/drive4
+      - /mnt/drive5:/var/www/filegator/repository/drive5
+      - /mnt/drive6:/var/www/filegator/repository/drive6
+      - /mnt/drive7:/var/www/filegator/repository/drive7
+      - /mnt/drive8:/var/www/filegator/repository/drive8
+      - /mnt/drive9:/var/www/filegator/repository/drive9
+      - /mnt/drive10:/var/www/filegator/repository/drive10
+      - /mnt/drive11:/var/www/filegator/repository/drive11
+      - /home/rowan/:/var/www/filegator/repository/home
+      - ~/services/filegator/logs:/var/www/filegator/private/logs
+      - ~/services/filegator/users.json:/var/www/filegator/private/users.json
+      - ~/services/filegator/configuration.php:/var/www/filegator/configuration.php
+
   plex:
     container_name: plex
     image: "linuxserver/plex:latest"
     networks:
       - internal
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
     ports:
       - 32400:32400
       - 1900:1900/udp
@@ -227,6 +260,8 @@ services:
       - PUID=1000
       - PGID=1000
       - VERSION=docker
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
     volumes:
       - ~/services/plex/config:/config
       - ~/services/plex/transcode:/transcode
