@@ -241,11 +241,12 @@ services:
     image: "linuxserver/plex:latest"
     networks:
       - internal
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+    # Enable once GPU is installed
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - capabilities: [gpu]
     ports:
       - 32400:32400
       - 1900:1900/udp
@@ -263,6 +264,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
     volumes:
+      - /dev/dri:/dev/dri
       - ~/services/plex/config:/config
       - ~/services/plex/transcode:/transcode
       - ~/services/plex/data:/data
