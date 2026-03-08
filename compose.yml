@@ -20,6 +20,7 @@ services:
       - TS_HOSTNAME=${TS_HOSTNAME}
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=false
+#      - TS_EXTRRA_FLAGS=--SSH
     command: tailscaled
     restart: always
 
@@ -92,12 +93,12 @@ services:
       - /mnt/drive4/Movies:/Movies4
       - /mnt/drive5/TV:/TV5
       - /mnt/drive5/Movies:/Movies5
-      - /mnt/drive6/TV:/TV6
-      - /mnt/drive6/Movies:/Movies6
+#      - /mnt/drive6/TV:/TV6
+#      - /mnt/drive6/Movies:/Movies6
       - /mnt/drive7/TV:/TV7
       - /mnt/drive7/Movies:/Movies7
-      - /mnt/drive8/TV:/TV8
-      - /mnt/drive8/Movies:/Movies8
+#      - /mnt/drive8/TV:/TV8
+#      - /mnt/drive8/Movies:/Movies8
       - /mnt/drive9/TV:/TV9
       - /mnt/drive9/Movies:/Movies9
       - /mnt/drive10/TV:/TV10
@@ -182,21 +183,21 @@ services:
         - PGID=1000
     restart: always
 
-#   duplicati:
-#     container_name: duplicati
-#     image: "lscr.io/linuxserver/duplicati:latest"
-#     network_mode: service:tailscale
-#     environment:
-#       - PUID=1000
-#       - PGID=1000
-#     volumes:
-#       - ~/services/duplicati/config:/config
-#       - ~/services/duplicati/restore:/restore
-#       - ~/services/duplicati/backups:/backups
-#       - ~/services/duplicati/source:/source
-#     ports:
-#       - 8200:8200
-#     restart: always
+  duplicati:
+    container_name: duplicati
+    image: "lscr.io/linuxserver/duplicati:latest"
+    network_mode: service:tailscale
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ~/services/duplicati/config:/config
+      - ~/services/duplicati/restore:/restore
+      - ~/services/duplicati/backups:/backups
+      - ~/services/duplicati/source:/source
+#    ports:
+#      - 8200:8200
+    restart: always
 
 #     homer:
 #       enabled: true
@@ -222,16 +223,16 @@ services:
       - /mnt/drive3:/var/www/filegator/repository/drive3
       - /mnt/drive4:/var/www/filegator/repository/drive4
       - /mnt/drive5:/var/www/filegator/repository/drive5
-      - /mnt/drive6:/var/www/filegator/repository/drive6
+#      - /mnt/drive6:/var/www/filegator/repository/drive6
       - /mnt/drive7:/var/www/filegator/repository/drive7
-      - /mnt/drive8:/var/www/filegator/repository/drive8
+#      - /mnt/drive8:/var/www/filegator/repository/drive8
       - /mnt/drive9:/var/www/filegator/repository/drive9
       - /mnt/drive10:/var/www/filegator/repository/drive10
       - /mnt/drive11:/var/www/filegator/repository/drive11
       - /home/rowan/:/var/www/filegator/repository/home
-      - ~/services/filegator/logs:/var/www/filegator/private/logs
-      - ~/services/filegator/users.json:/var/www/filegator/private/users.json
-      - ~/services/filegator/configuration.php:/var/www/filegator/configuration.php
+#      - ~/services/filegator/:/var/www/filegator/repository
+#      - ~/services/filegator/users.json:/var/www/filegator/private/users.json
+#      - ~/services/filegator/configuration.php:/var/www/filegator/configuration.php
 
   plex:
     container_name: plex
@@ -274,12 +275,12 @@ services:
       - /mnt/drive4/Movies:/Movies4
       - /mnt/drive5/TV:/TV5
       - /mnt/drive5/Movies:/Movies5
-      - /mnt/drive6/TV:/TV6
-      - /mnt/drive6/Movies:/Movies6
+#      - /mnt/drive6/TV:/TV6
+#      - /mnt/drive6/Movies:/Movies6
       - /mnt/drive7/TV:/TV7
       - /mnt/drive7/Movies:/Movies7
-      - /mnt/drive8/TV:/TV8
-      - /mnt/drive8/Movies:/Movies8
+#      - /mnt/drive8/TV:/TV8
+#      - /mnt/drive8/Movies:/Movies8
       - /mnt/drive9/TV:/TV9
       - /mnt/drive9/Movies:/Movies9
       - /mnt/drive10/TV:/TV10
@@ -303,10 +304,10 @@ services:
 
   radarr:
     container_name: radarr
-    image: lscr.io/linuxserver/radarr:latest 
+    image: lscr.io/linuxserver/radarr:latest
     network_mode: service:tailscale
-    environment: 
-      - PUID=1000 
+    environment:
+      - PUID=1000
       - PGID=1000
     volumes:
       - ~/services/radarr/config:/config
@@ -315,9 +316,9 @@ services:
       - /mnt/drive3/Movies:/Movies3
       - /mnt/drive4/Movies:/Movies4
       - /mnt/drive5/Movies:/Movies5
-      - /mnt/drive6/Movies:/Movies6
+#      - /mnt/drive6/Movies:/Movies6
       - /mnt/drive7/Movies:/Movies7
-      - /mnt/drive8/Movies:/Movies8
+#      - /mnt/drive8/Movies:/Movies8
       - /mnt/drive9/Movies:/Movies9
       - /mnt/drive10/Movies:/Movies10
       - /mnt/drive11/Movies:/Movies11
@@ -338,12 +339,12 @@ services:
 #     PORT: 9708
 #     restart: always
 
-  sonarr: 
+  sonarr:
     container_name: sonarr
-    image: lscr.io/linuxserver/sonarr:latest 
+    image: lscr.io/linuxserver/sonarr:latest
     network_mode: service:tailscale
-    environment: 
-      - PUID=1000 
+    environment:
+      - PUID=1000
       - PGID=1000
     volumes:
       - ~/services/sonarr/config:/config
@@ -352,15 +353,15 @@ services:
       - /mnt/drive3/TV:/TV3
       - /mnt/drive4/TV:/TV4
       - /mnt/drive5/TV:/TV5
-      - /mnt/drive6/TV:/TV6
+#      - /mnt/drive6/TV:/TV6
       - /mnt/drive7/TV:/TV7
-      - /mnt/drive8/TV:/TV8
+#      - /mnt/drive8/TV:/TV8
       - /mnt/drive9/TV:/TV9
       - /mnt/drive10/TV:/TV10
       - /mnt/drive11/TV:/TV11
       - /mnt/remote/:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
     depends_on:
-      - prowlarr 
+      - prowlarr
     restart: always
 
 #   sonarr-exporter:
@@ -379,6 +380,60 @@ services:
 #       - "9707:9707"
 #     restart: always
 
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:commit-d41921247bdf00e52635ce79805598ef548f4838
+    container_name: immich_server
+    depends_on:
+      - immich-redis
+      - immich-database
+      - immich-machine-learning
+    network_mode: service:tailscale   # shares Tailscale network
+#    ports:
+#      - "2283:2283"   # optional, only if you want host access outside Tailscale
+# Cant use with network_mode
+    environment:
+      TZ: "UTC"
+      IMMICH_LOG_LEVEL: "warn"
+      DATABASE_HOST: localhost
+      DATABASE_PORT: 5432
+      DATABASE_USER: immich
+      DATABASE_PASSWORD: immich
+      DATABASE_NAME: immich
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+    volumes:
+      - ~/photos:/usr/src/app/upload       # your photo library + new uploads
+    restart: unless-stopped
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:commit-07eb270706aff28b9cb9498bf024ff9a9cef0606
+    container_name: immich_ml
+    network_mode: service:tailscale
+    volumes:
+      - ~/services/immich/cache:/cache    # ML cache
+    restart: unless-stopped
+
+  immich-database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    container_name: immich_postgres
+    network_mode: service:tailscale
+    environment:
+      POSTGRES_USER: immich
+      POSTGRES_PASSWORD: immich
+      POSTGRES_DB: immich
+    volumes:
+      - ~/services/immich/db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  immich-redis:
+    image: docker.io/valkey/valkey:8@sha256:81db6d39e1bba3b3ff32bd3a1b19a6d69690f94a3954ec131277b9a26b95b3aa
+    container_name: immich_redis
+    network_mode: service:tailscale
+    volumes:
+      - ~/services/immich/redis:/data
+    restart: unless-stopped
+
 networks:
   internal:
     driver: bridge
+
