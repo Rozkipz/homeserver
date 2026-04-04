@@ -1,4 +1,6 @@
 ---
+# *arr/Bazarr/Prowlarr: use Docker DNS (http://prowlarr:9696 etc.), not localhost — old setup shared tailscale netns.
+# tailnet_tcp_proxy: apps listen on the bridge + host-published ports; tsmonster holds the 100.x IP. Without these socats, tailnet clients hitting tsmonster:8989 etc. get nothing.
 version: "1"
 services:
   tailscale:
@@ -20,54 +22,36 @@ services:
       - TS_HOSTNAME=${TS_HOSTNAME}
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=false
-#      - TS_EXTRRA_FLAGS=--SSH
+      - TS_EXTRA_ARGS=--ssh
     command: tailscaled
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: always
-
-  dockerui:
-    container_name: dockerui
-    image: "otothea/docker-ui:latest"
-    environment:
-      - PUID=1000
-      - PGID=1000
-    network_mode: service:tailscale
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-#     ports:
-#       - "9898:9898"
 
   heimdall:
     image: lscr.io/linuxserver/heimdall:latest
-    network_mode: service:tailscale
     container_name: heimdall
+    networks:
+      - internal
+    ports:
+      - "8087:80"
     environment:
       - PUID=1000
       - PGID=1000
-#     ports:
-#       - 80:80
-#       - 443:443
     volumes:
       - ~/services/heimdall/config:/config
     restart: always
 
-#   whitebophir:
-#     image: lovasoa/wbo:latest
-#     container_name: whitebophir
-#     networks:
-#       - docker_bridge
-#     volumes:
-#       - ~/services/whitebophir:/opt/app/server-data
-#     restart: always
-
   archivebox:
     container_name: archivebox
     image: "archivebox/archivebox:latest"
-    network_mode: service:tailscale
+    networks:
+      - internal
+    ports:
+      - "8010:8000"
     environment:
       - PUID=1000
       - PGID=1000
-#     ports:
-#       - "8000:8000"
     volumes:
       - ~/services/archivebox/data/:/data/
     restart: always
@@ -75,12 +59,13 @@ services:
   bazarr:
     container_name: bazarr
     image: "linuxserver/bazarr:latest"
-    network_mode: service:tailscale
+    networks:
+      - internal
+    ports:
+      - "6767:6767"
     environment:
       - PUID=1000
       - PGID=1000
-#     ports:
-#       - "6767:6767"
     volumes:
       - ~/services/bazarr/config:/config
       - /mnt/drive1/TV:/TV1
@@ -110,61 +95,13 @@ services:
       - radarr
     restart: always
 
-#   checkrr:
-#     container_name: checkrr
-#     image: "aetaric/checkrr:latest"
-#     network_mode: service:tailscale
-#     environment:
-#       - PUID=1000
-#       - PGID=1000
-# #     ports:
-# #       - "8585:8585"
-#     volumes:
-#       - ~/services/checkrr/checkrr.yaml:/etc/checkrr.yaml
-#       - ~/services/checkrr/checkrr.db:/checkrr.db
-#       - /mnt/drive1/TV:/TV1
-#       - /mnt/drive1/Movies:/Movies1
-#       - /mnt/drive2/TV:/TV2
-#       - /mnt/drive2/Movies:/Movies2
-#       - /mnt/drive3/TV:/TV3
-#       - /mnt/drive3/Movies:/Movies3
-#       - /mnt/drive4/TV:/TV4
-#       - /mnt/drive4/Movies:/Movies4
-#       - /mnt/drive5/TV:/TV5
-#       - /mnt/drive5/Movies:/Movies5
-#       - /mnt/drive6/TV:/TV6
-#       - /mnt/drive6/Movies:/Movies6
-#       - /mnt/drive7/TV:/TV7
-#       - /mnt/drive7/Movies:/Movies7
-#       - /mnt/drive8/TV:/TV8
-#       - /mnt/drive8/Movies:/Movies8
-#       - /mnt/drive9/TV:/TV9
-#       - /mnt/drive9/Movies:/Movies9
-#       - /mnt/drive10/TV:/TV10
-#       - /mnt/drive10/Movies:/Movies10
-#       - /mnt/drive11/TV:/TV11
-#       - /mnt/drive11/Movies:/Movies11
-#     restart: always
-
-#   prowlarr-exporter:
-#     container_name: prowlarr-exporter
-#     image: "ghcr.io/onedr0p/exportarr:latest"
-#     network_mode: service:tailscale
-#     command: ["prowlarr"]
-#     environment:
-#       - PUID=1000
-#       - PGID=1000
-#       - PORT=9710
-#       - URL="http://prowlarr:9696"
-#       - APIKEY="abc"
-#     ports:
-#      - "9710:9710"
-#     restart: always
-
   prowlarr:
     container_name: prowlarr
     image: "lscr.io/linuxserver/prowlarr:latest"
-    network_mode: service:tailscale
+    networks:
+      - internal
+    ports:
+      - "9696:9696"
     environment:
       - PUID=1000
       - PGID=1000
@@ -177,16 +114,22 @@ services:
   flaresolverr:
     container_name: flaresolverr
     image: "ghcr.io/flaresolverr/flaresolverr:latest"
-    network_mode: service:tailscale
+    networks:
+      - internal
+    ports:
+      - "8191:8191"
     environment:
-        - PUID=1000
-        - PGID=1000
+      - PUID=1000
+      - PGID=1000
     restart: always
 
   duplicati:
     container_name: duplicati
     image: "lscr.io/linuxserver/duplicati:latest"
-    network_mode: service:tailscale
+    networks:
+      - internal
+    ports:
+      - "8200:8200"
     environment:
       - PUID=1000
       - PGID=1000
@@ -195,24 +138,15 @@ services:
       - ~/services/duplicati/restore:/restore
       - ~/services/duplicati/backups:/backups
       - ~/services/duplicati/source:/source
-#    ports:
-#      - 8200:8200
     restart: always
-
-#     homer:
-#       enabled: true
-#       image:
-#         repository: "b4bz/homer"
-#         version: v23.05.1
-#       pullPolicy: Always
-#       port: 8080
-#       securityContext: {}
-#     restart: always
 
   filegator:
     container_name: filegator
     image: "filegator/filegator"
-    network_mode: service:tailscale
+    networks:
+      - internal
+    ports:
+      - "8089:8080"
     restart: always
     environment:
       - PUID=1000
@@ -230,21 +164,12 @@ services:
       - /mnt/drive10:/var/www/filegator/repository/drive10
       - /mnt/drive11:/var/www/filegator/repository/drive11
       - /home/rowan/:/var/www/filegator/repository/home
-#      - ~/services/filegator/:/var/www/filegator/repository
-#      - ~/services/filegator/users.json:/var/www/filegator/private/users.json
-#      - ~/services/filegator/configuration.php:/var/www/filegator/configuration.php
 
   plex:
     container_name: plex
     image: "linuxserver/plex:latest"
     networks:
       - internal
-    # Enable once GPU is installed
-    #deploy:
-    #  resources:
-    #    reservations:
-    #      devices:
-    #        - capabilities: [gpu]
     ports:
       - 32400:32400
       - 1900:1900/udp
@@ -289,23 +214,13 @@ services:
       - /mnt/drive11/Movies:/Movies11
     restart: always
 
-#   wizarr:
-#     container_name: wizarr
-#     image: ghcr.io/wizarrrr/wizarr:latest
-#     network_mode: service:tailscale
-# #     ports:
-# #       - 5690:5690
-#     volumes:
-#       - ~/services/wizarr/database:/data/database
-#     environment:
-#       - PUID=1000
-#       - PGID=1000
-#     restart: always
-
   radarr:
     container_name: radarr
     image: lscr.io/linuxserver/radarr:latest
-    network_mode: service:tailscale
+    networks:
+      - internal
+    ports:
+      - "7878:7878"
     environment:
       - PUID=1000
       - PGID=1000
@@ -322,27 +237,18 @@ services:
       - /mnt/drive9/Movies:/Movies9
       - /mnt/drive10/Movies:/Movies10
       - /mnt/drive11/Movies:/Movies11
-      - /mnt/remote/:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
+      - /mnt/remote/:/downloads/complete
     depends_on:
       - prowlarr
     restart: always
 
-#   radarr-exporter:
-#     container_name: radarr-exporter
-#     image: "ghcr.io/onedr0p/exportarr:latest"
-#     command: "radarr"
-#     networks:
-#       - service:tailscale
-#     environment:
-#       - URL=http://radarr:7878"
-#       - APIKEY=${RADARR_AUTHKEY}
-#     PORT: 9708
-#     restart: always
-
   sonarr:
     container_name: sonarr
     image: lscr.io/linuxserver/sonarr:latest
-    network_mode: service:tailscale
+    networks:
+      - internal
+    ports:
+      - "8989:8989"
     environment:
       - PUID=1000
       - PGID=1000
@@ -359,81 +265,116 @@ services:
       - /mnt/drive9/TV:/TV9
       - /mnt/drive10/TV:/TV10
       - /mnt/drive11/TV:/TV11
-      - /mnt/remote/:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
+      - /mnt/remote/:/downloads/complete
     depends_on:
       - prowlarr
     restart: always
 
-#   sonarr-exporter:
-#     container_name: sonarr-exporter
-#     image: "ghcr.io/onedr0p/exportarr:latest"
-#     command: "sonarr"
-#     networks:
-#       - service:tailscale
-#     depends_on:
-#       - sonarr
-#     environment:
-#       - URL=http://sonarr:8989
-#       - APIKEY=${SONAR_AUTHKEY}
-#       PORT: 9707
-#     ports:
-#       - "9707:9707"
-#     restart: always
-
   immich-server:
-    image: ghcr.io/immich-app/immich-server:commit-d41921247bdf00e52635ce79805598ef548f4838
+    image: ghcr.io/immich-app/immich-server:release
     container_name: immich_server
+    networks:
+      - immich_internal
+    ports:
+      - "2283:2283"
     depends_on:
-      - immich-redis
-      - immich-database
-      - immich-machine-learning
-    network_mode: service:tailscale   # shares Tailscale network
-#    ports:
-#      - "2283:2283"   # optional, only if you want host access outside Tailscale
-# Cant use with network_mode
+      immich-redis:
+        condition: service_healthy
+      immich-database:
+        condition: service_healthy
+      immich-machine-learning:
+        condition: service_started
     environment:
-      TZ: "UTC"
-      IMMICH_LOG_LEVEL: "warn"
-      DATABASE_HOST: localhost
-      DATABASE_PORT: 5432
-      DATABASE_USER: immich
-      DATABASE_PASSWORD: immich
-      DATABASE_NAME: immich
-      REDIS_HOST: localhost
-      REDIS_PORT: 6379
+      TZ: UTC
+      IMMICH_LOG_LEVEL: warn
+      IMMICH_PUBLIC_URL: https://immich.rowan.sh
+      DB_HOSTNAME: immich-database
+      DB_USERNAME: immich
+      DB_PASSWORD: immich
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: immich-redis
     volumes:
-      - ~/photos:/usr/src/app/upload       # your photo library + new uploads
+      - ~/photos:/data
+      - ~/photos:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:commit-07eb270706aff28b9cb9498bf024ff9a9cef0606
+    image: ghcr.io/immich-app/immich-machine-learning:release
     container_name: immich_ml
-    network_mode: service:tailscale
+    networks:
+      - immich_internal
     volumes:
-      - ~/services/immich/cache:/cache    # ML cache
+      - ~/services/immich/cache:/cache
     restart: unless-stopped
 
   immich-database:
     image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
     container_name: immich_postgres
-    network_mode: service:tailscale
+    networks:
+      - immich_internal
     environment:
       POSTGRES_USER: immich
       POSTGRES_PASSWORD: immich
       POSTGRES_DB: immich
     volumes:
       - ~/services/immich/db:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U immich -d immich
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     restart: unless-stopped
 
   immich-redis:
     image: docker.io/valkey/valkey:8@sha256:81db6d39e1bba3b3ff32bd3a1b19a6d69690f94a3954ec131277b9a26b95b3aa
     container_name: immich_redis
-    network_mode: service:tailscale
+    networks:
+      - immich_internal
     volumes:
       - ~/services/immich/redis:/data
+    healthcheck:
+      test: valkey-cli ping
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  tailnet_tcp_proxy:
+    image: alpine/socat:latest
+    container_name: tailnet_tcp_proxy
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
+      - immich-server
+      - sonarr
+      - radarr
+      - prowlarr
+      - bazarr
+      - flaresolverr
+      - duplicati
+      - heimdall
+      - archivebox
+      - filegator
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        socat tcp-listen:2283,fork,reuseaddr tcp-connect:host.docker.internal:2283 &
+        socat tcp-listen:8989,fork,reuseaddr tcp-connect:host.docker.internal:8989 &
+        socat tcp-listen:7878,fork,reuseaddr tcp-connect:host.docker.internal:7878 &
+        socat tcp-listen:9696,fork,reuseaddr tcp-connect:host.docker.internal:9696 &
+        socat tcp-listen:6767,fork,reuseaddr tcp-connect:host.docker.internal:6767 &
+        socat tcp-listen:8191,fork,reuseaddr tcp-connect:host.docker.internal:8191 &
+        socat tcp-listen:8200,fork,reuseaddr tcp-connect:host.docker.internal:8200 &
+        socat tcp-listen:8087,fork,reuseaddr tcp-connect:host.docker.internal:8087 &
+        socat tcp-listen:8010,fork,reuseaddr tcp-connect:host.docker.internal:8010 &
+        socat tcp-listen:8089,fork,reuseaddr tcp-connect:host.docker.internal:8089 &
+        wait
     restart: unless-stopped
 
 networks:
   internal:
     driver: bridge
-
+  immich_internal:
+    driver: bridge

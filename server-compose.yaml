@@ -18,6 +18,7 @@ services:
       - TS_HOSTNAME=${TS_HOSTNAME}
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=false
+      - TS_EXTRA_ARGS=--ssh
     command: tailscaled
     networks:
       - docker_bridge
@@ -25,10 +26,32 @@ services:
       - headscale
     restart: always
 
+  # TCP on tsmill netns -> HOMESERVER_TAILNET_IP (tsmonster). Caddy: reverse_proxy http://tailscale:<listen_port>
+  # Add more: socat tcp-listen:<L>,fork,reuseaddr tcp-connect:$${TAILNET_RELAY_TARGET}:<remote> &
+  tailnet-relay:
+    image: alpine/socat:latest
+    container_name: tailnet_relay
+    network_mode: service:tailscale
+    env_file:
+      - .env
+    environment:
+      TAILNET_RELAY_TARGET: ${HOMESERVER_TAILNET_IP:?set HOMESERVER_TAILNET_IP in .env}
+    depends_on:
+      - tailscale
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        socat tcp-listen:2284,fork,reuseaddr tcp-connect:$${TAILNET_RELAY_TARGET}:2283 &
+        wait
+    restart: always
+
   ombi:
     container_name: ombi
     image: "linuxserver/ombi:latest"
-    network_mode: service:tailscale
+    networks:
+      - docker_bridge
+    ports:
+      - "3579:3579"
     environment:
       - PUID=1001
       - PGID=1001
@@ -63,17 +86,20 @@ services:
       - BASIC_AUTH_USER=${BASIC_USER}
       - BASIC_AUTH_PASS=${BASIC_PASS}
     volumes:
-      - ~/services/headscaleui:/data  # this must be owned by user `1000:1000`
+      - ~/services/headscaleui:/data
       - ~/services/headscale:/etc/headscale/:ro
     restart: always
 
   caddy:
     image: caddy:2-alpine
     container_name: caddy
+    env_file:
+      - .env
     depends_on:
       - ombi
       - hswebui
       - rutorrent
+      - tailnet-relay
     volumes:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data
@@ -88,15 +114,14 @@ services:
   unpackerr:
     container_name: unpackerr
     image: "golift/unpackerr:latest"
-    network_mode: service:tailscale
+    networks:
+      - docker_bridge
     volumes:
       - ~/services/unpackerr/config:/config
-      - ~/services/rtorrent/downloads/complete:/downloads/complete  # *arr is just retarded, won't map the folders properly? Just mount in with `/complete/`
+      - ~/services/rtorrent/downloads/complete:/downloads/complete
     environment:
       - PUID=1000
       - PGID=1000
-    depends_on:
-      - tailscale
     restart: always
 
   rutorrent:
@@ -107,6 +132,7 @@ services:
     ports:
       - 6881:6881
       - 8000:8000
+      - 8080:8080
       - 50000:50000
     env_file:
       - rtorrent-rutorrent.env
