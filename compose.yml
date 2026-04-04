@@ -1,7 +1,6 @@
 ---
 # *arr/Bazarr/Prowlarr: use Docker DNS (http://prowlarr:9696 etc.), not localhost — old setup shared tailscale netns.
 # tailnet_tcp_proxy: apps listen on the bridge + host-published ports; tsmonster holds the 100.x IP. Without these socats, tailnet clients hitting tsmonster:8989 etc. get nothing.
-version: "1"
 services:
   tailscale:
     container_name: tsmonster
@@ -341,6 +340,28 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Use a directory bind for Headscale config (avoids file-mount "not a directory" runc errors):
+  #   mkdir -p ~/services/headplane/headscale-ro && scp mill:~/services/headscale/config.yaml ~/services/headplane/headscale-ro/config.yaml
+  headplane:
+    image: ghcr.io/tale/headplane:latest
+    container_name: headplane
+    networks:
+      - internal
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - .env
+    environment:
+      HEADPLANE_SERVER__BASE_URL: ${HEADPLANE_BASE_URL:?set HEADPLANE_BASE_URL e.g. https://hs.rowan.sh}
+      HEADPLANE_SERVER__COOKIE_SECRET: ${HEADPLANE_COOKIE_SECRET:?openssl rand -hex 16}
+      HEADPLANE_HEADSCALE__URL: https://headscale.rowan.sh
+      HEADPLANE_HEADSCALE__PUBLIC_URL: https://headscale.rowan.sh
+    volumes:
+      - ~/services/headplane/config.yaml:/etc/headplane/config.yaml
+      - ~/services/headplane/data:/var/lib/headplane
+      - ~/services/headplane/headscale-ro:/etc/headscale:ro
+    restart: unless-stopped
+
   tailnet_tcp_proxy:
     image: alpine/socat:latest
     container_name: tailnet_tcp_proxy
@@ -348,6 +369,7 @@ services:
     depends_on:
       - tailscale
       - immich-server
+      - headplane
       - sonarr
       - radarr
       - prowlarr
@@ -361,6 +383,7 @@ services:
     command:
       - |
         socat tcp-listen:2283,fork,reuseaddr tcp-connect:host.docker.internal:2283 &
+        socat tcp-listen:3000,fork,reuseaddr tcp-connect:host.docker.internal:3000 &
         socat tcp-listen:8989,fork,reuseaddr tcp-connect:host.docker.internal:8989 &
         socat tcp-listen:7878,fork,reuseaddr tcp-connect:host.docker.internal:7878 &
         socat tcp-listen:9696,fork,reuseaddr tcp-connect:host.docker.internal:9696 &

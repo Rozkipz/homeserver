@@ -1,5 +1,4 @@
 ---
-version: "1"
 services:
   tailscale:
     container_name: tsmill
@@ -42,6 +41,7 @@ services:
     command:
       - |
         socat tcp-listen:2284,fork,reuseaddr tcp-connect:$${TAILNET_RELAY_TARGET}:2283 &
+        socat tcp-listen:2300,fork,reuseaddr tcp-connect:$${TAILNET_RELAY_TARGET}:3000 &
         wait
     restart: always
 
@@ -65,29 +65,13 @@ services:
     networks:
       - docker_bridge
     entrypoint: headscale serve
+    labels:
+      me.tale.headplane.target: headscale
     volumes:
       - ~/services/headscale:/etc/headscale
     environment:
       - PUID=1001
       - PGID=1001
-    restart: always
-
-  hswebui:
-    image: ghcr.io/ifargle/headscale-webui:latest
-    container_name: hswebui
-    networks:
-      - docker_bridge
-    environment:
-      - COLOR=grey
-      - HS_SERVER=http://headscale:8080
-      - DOMAIN_NAME=${DOMAIN}
-      - KEY=${HS_AUTHKEY}
-      - AUTH_TYPE=basic
-      - BASIC_AUTH_USER=${BASIC_USER}
-      - BASIC_AUTH_PASS=${BASIC_PASS}
-    volumes:
-      - ~/services/headscaleui:/data
-      - ~/services/headscale:/etc/headscale/:ro
     restart: always
 
   caddy:
@@ -97,7 +81,6 @@ services:
       - .env
     depends_on:
       - ombi
-      - hswebui
       - rutorrent
       - tailnet-relay
     volumes:
