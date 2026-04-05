@@ -21,7 +21,7 @@ services:
       - TS_HOSTNAME=${TS_HOSTNAME}
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=false
-      - TS_EXTRA_ARGS=--ssh
+      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS:?set TS_EXTRA_ARGS in .env}
     command: tailscaled
     extra_hosts:
       - "host.docker.internal:host-gateway"
