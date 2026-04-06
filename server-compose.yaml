@@ -95,17 +95,19 @@ services:
       - 443:443
     restart: always
 
+  # Shares tsmill netns so API calls to 100.x reach tailnet; plain docker_bridge has no route to 100.64.0.0/10.
   unpackerr:
     container_name: unpackerr
     image: "golift/unpackerr:latest"
-    networks:
-      - docker_bridge
+    network_mode: service:tailscale
     volumes:
       - ~/services/unpackerr/config:/config
       - ~/services/rtorrent/downloads/complete:/downloads/complete
     environment:
       - PUID=1000
       - PGID=1000
+    depends_on:
+      - tailscale
     restart: always
 
   rutorrent:
