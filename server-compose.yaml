@@ -113,11 +113,15 @@ services:
     container_name: rutorrent
     networks:
       - docker_bridge
+    # Caddy reaches rutorrent:8000 / :8080 on docker_bridge; bind HTTP services to loopback only (no cleartext creds on WAN).
+    # Caddyfile: handle /RPC2* { reverse_proxy http://rutorrent:8000 }; handle { reverse_proxy http://rutorrent:8080 }
     ports:
-      - 6881:6881
-      - 8000:8000
-      - 8080:8080
-      - 50000:50000
+      - 6881:6881/tcp
+      - 6881:6881/udp
+      - 127.0.0.1:8000:8000
+      - 127.0.0.1:8080:8080
+      - 50000:50000/tcp
+      - 50000:50000/udp
     env_file:
       - rtorrent-rutorrent.env
     volumes:
