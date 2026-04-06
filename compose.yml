@@ -1,32 +1,7 @@
 ---
-# *arr/Bazarr/Prowlarr: use Docker DNS (http://prowlarr:9696 etc.), not localhost — old setup shared tailscale netns.
-# tailnet_tcp_proxy: apps listen on the bridge + host-published ports; tsmonster holds the 100.x IP. Without these socats, tailnet clients hitting tsmonster:8989 etc. get nothing.
+# Tailscale runs on the host OS (not Docker) so you can SSH to the machine on its tailnet IP.
+# *arr: use Docker DNS (http://prowlarr:9696 etc.), not localhost.
 services:
-  tailscale:
-    container_name: tsmonster
-    hostname: tsmonster
-    image: tailscale/tailscale:latest
-    networks:
-      - internal
-    volumes:
-      - ~/services/tailscale/config:/var/lib
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - net_admin
-      - sys_module
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_HOSTNAME=${TS_HOSTNAME}
-      - TS_USERSPACE=false
-      - TS_AUTH_ONCE=false
-      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS:?set TS_EXTRA_ARGS in .env}
-    command: tailscaled
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: always
-
   heimdall:
     image: lscr.io/linuxserver/heimdall:latest
     container_name: heimdall
@@ -340,15 +315,15 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # Use a directory bind for Headscale config (avoids file-mount "not a directory" runc errors):
-  #   mkdir -p ~/services/headplane/headscale-ro && scp mill:~/services/headscale/config.yaml ~/services/headplane/headscale-ro/config.yaml
+  # Published on 0.0.0.0 so mill tailnet-relay can reach HOMESERVER_TAILNET_IP:3000 (host Tailscale + docker-proxy).
+  # Headscale config dir: mkdir -p ~/services/headplane/headscale-ro && scp mill:~/services/headscale/config.yaml ~/services/headplane/headscale-ro/config.yaml
   headplane:
     image: ghcr.io/tale/headplane:latest
     container_name: headplane
     networks:
       - internal
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     env_file:
       - .env
     environment:
@@ -360,40 +335,6 @@ services:
       - ~/services/headplane/config.yaml:/etc/headplane/config.yaml
       - ~/services/headplane/data:/var/lib/headplane
       - ~/services/headplane/headscale-ro:/etc/headscale:ro
-    restart: unless-stopped
-
-  tailnet_tcp_proxy:
-    image: alpine/socat:latest
-    container_name: tailnet_tcp_proxy
-    network_mode: service:tailscale
-    depends_on:
-      - tailscale
-      - immich-server
-      - headplane
-      - sonarr
-      - radarr
-      - prowlarr
-      - bazarr
-      - flaresolverr
-      - duplicati
-      - heimdall
-      - archivebox
-      - filegator
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        socat tcp-listen:2283,fork,reuseaddr tcp-connect:host.docker.internal:2283 &
-        socat tcp-listen:3000,fork,reuseaddr tcp-connect:host.docker.internal:3000 &
-        socat tcp-listen:8989,fork,reuseaddr tcp-connect:host.docker.internal:8989 &
-        socat tcp-listen:7878,fork,reuseaddr tcp-connect:host.docker.internal:7878 &
-        socat tcp-listen:9696,fork,reuseaddr tcp-connect:host.docker.internal:9696 &
-        socat tcp-listen:6767,fork,reuseaddr tcp-connect:host.docker.internal:6767 &
-        socat tcp-listen:8191,fork,reuseaddr tcp-connect:host.docker.internal:8191 &
-        socat tcp-listen:8200,fork,reuseaddr tcp-connect:host.docker.internal:8200 &
-        socat tcp-listen:8087,fork,reuseaddr tcp-connect:host.docker.internal:8087 &
-        socat tcp-listen:8010,fork,reuseaddr tcp-connect:host.docker.internal:8010 &
-        socat tcp-listen:8089,fork,reuseaddr tcp-connect:host.docker.internal:8089 &
-        wait
     restart: unless-stopped
 
 networks:
