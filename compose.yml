@@ -268,8 +268,8 @@ services:
       DB_DATABASE_NAME: immich
       REDIS_HOSTNAME: immich-redis
     volumes:
-      - ~/photos:/data
-      - ~/photos:/usr/src/app/upload
+      # Live photo library lives on drive1 (mirrored to drive3 by immich-backup below).
+      - /mnt/drive1/images:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
 
@@ -313,6 +313,36 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+    restart: unless-stopped
+
+  # Redundancy: mirror the live Immich library (drive1) onto drive3 so the photos
+  # (and Immich's daily DB dumps under backups/) exist on both 4TB drives.
+  # Runs an initial sync on start, then every 6h. --delete keeps drive3 an exact
+  # mirror; source is mounted read-only so this job can never modify the live library.
+  immich-backup:
+    image: alpine:3.20
+    container_name: immich_backup
+    networks:
+      - internal
+    command:
+      - /bin/sh
+      - -c
+      - |
+        until apk add --no-cache rsync >/dev/null 2>&1; do
+          echo "[immich-backup] installing rsync (waiting for network)..."; sleep 10;
+        done
+        while true; do
+          echo "[immich-backup] $(date -u +%FT%TZ) starting mirror drive1 -> drive3";
+          if rsync -aH --delete /primary/ /backup/; then
+            echo "[immich-backup] $(date -u +%FT%TZ) mirror complete";
+          else
+            echo "[immich-backup] $(date -u +%FT%TZ) mirror FAILED (rc=$?)";
+          fi
+          sleep 21600;
+        done
+    volumes:
+      - /mnt/drive1/images:/primary:ro
+      - /mnt/drive3/images:/backup
     restart: unless-stopped
 
   # Published on 0.0.0.0 so mill tailnet-relay can reach HOMESERVER_TAILNET_IP:3000 (host Tailscale + docker-proxy).
