@@ -52,12 +52,12 @@ services:
       - /mnt/drive4/Movies:/Movies4
       - /mnt/drive5/TV:/TV5
       - /mnt/drive5/Movies:/Movies5
-#      - /mnt/drive6/TV:/TV6
-#      - /mnt/drive6/Movies:/Movies6
+      - /mnt/drive6/TV:/TV6
+      - /mnt/drive6/Movies:/Movies6
       - /mnt/drive7/TV:/TV7
       - /mnt/drive7/Movies:/Movies7
-#      - /mnt/drive8/TV:/TV8
-#      - /mnt/drive8/Movies:/Movies8
+      - /mnt/drive8/TV:/TV8
+      - /mnt/drive8/Movies:/Movies8
       - /mnt/drive9/TV:/TV9
       - /mnt/drive9/Movies:/Movies9
       - /mnt/drive10/TV:/TV10
@@ -131,9 +131,9 @@ services:
       - /mnt/drive3:/var/www/filegator/repository/drive3
       - /mnt/drive4:/var/www/filegator/repository/drive4
       - /mnt/drive5:/var/www/filegator/repository/drive5
-#      - /mnt/drive6:/var/www/filegator/repository/drive6
+      - /mnt/drive6:/var/www/filegator/repository/drive6
       - /mnt/drive7:/var/www/filegator/repository/drive7
-#      - /mnt/drive8:/var/www/filegator/repository/drive8
+      - /mnt/drive8:/var/www/filegator/repository/drive8
       - /mnt/drive9:/var/www/filegator/repository/drive9
       - /mnt/drive10:/var/www/filegator/repository/drive10
       - /mnt/drive11:/var/www/filegator/repository/drive11
@@ -174,12 +174,12 @@ services:
       - /mnt/drive4/Movies:/Movies4
       - /mnt/drive5/TV:/TV5
       - /mnt/drive5/Movies:/Movies5
-#      - /mnt/drive6/TV:/TV6
-#      - /mnt/drive6/Movies:/Movies6
+      - /mnt/drive6/TV:/TV6
+      - /mnt/drive6/Movies:/Movies6
       - /mnt/drive7/TV:/TV7
       - /mnt/drive7/Movies:/Movies7
-#      - /mnt/drive8/TV:/TV8
-#      - /mnt/drive8/Movies:/Movies8
+      - /mnt/drive8/TV:/TV8
+      - /mnt/drive8/Movies:/Movies8
       - /mnt/drive9/TV:/TV9
       - /mnt/drive9/Movies:/Movies9
       - /mnt/drive10/TV:/TV10
@@ -205,9 +205,9 @@ services:
       - /mnt/drive3/Movies:/Movies3
       - /mnt/drive4/Movies:/Movies4
       - /mnt/drive5/Movies:/Movies5
-#      - /mnt/drive6/Movies:/Movies6
+      - /mnt/drive6/Movies:/Movies6
       - /mnt/drive7/Movies:/Movies7
-#      - /mnt/drive8/Movies:/Movies8
+      - /mnt/drive8/Movies:/Movies8
       - /mnt/drive9/Movies:/Movies9
       - /mnt/drive10/Movies:/Movies10
       - /mnt/drive11/Movies:/Movies11
@@ -233,9 +233,9 @@ services:
       - /mnt/drive3/TV:/TV3
       - /mnt/drive4/TV:/TV4
       - /mnt/drive5/TV:/TV5
-#      - /mnt/drive6/TV:/TV6
+      - /mnt/drive6/TV:/TV6
       - /mnt/drive7/TV:/TV7
-#      - /mnt/drive8/TV:/TV8
+      - /mnt/drive8/TV:/TV8
       - /mnt/drive9/TV:/TV9
       - /mnt/drive10/TV:/TV10
       - /mnt/drive11/TV:/TV11
@@ -243,6 +243,95 @@ services:
     depends_on:
       - prowlarr
     restart: always
+
+  # Jellyseerr — media-request frontend (replaces Ombi, which used to run on the edge host).
+  # Lives here on `internal` so it reaches Plex/Sonarr/Radarr by Docker DNS
+  # (http://plex:32400, http://sonarr:8989, http://radarr:7878) instead of over the tailnet.
+  # Exposed publicly as jellyseerr.rowan.sh via the edge host's Caddy + tailnet-relay
+  # (server-compose.yaml), so nothing is published on the public VPS. Port 5055 is bound here
+  # only for the relay to reach over the tailnet. Not an LSIO image, so no PUID/PGID.
+  jellyseerr:
+    container_name: jellyseerr
+    image: "fallenbagel/jellyseerr:latest"
+    networks:
+      - internal
+    ports:
+      - "5055:5055"
+    environment:
+      - TZ=UTC
+      - LOG_LEVEL=info
+    volumes:
+      - ~/services/jellyseerr/config:/app/config
+    restart: always
+
+  # AudioBookRequest (markbeep/AudioBookRequest) — audiobook request manager.
+  # On `internal` so it reaches Prowlarr by Docker DNS (http://prowlarr:9696) for searches.
+  # Exposed as audiobookrequest.rowan.sh via the edge Caddy + tailnet-relay (server-compose.yaml,
+  # socat 8000 hop). Port 8000 bound here only for the relay. Data/SQLite live in /config.
+  # First run: create the root admin + pick login type in the UI. No PUID/PGID (not an LSIO image).
+  audiobookrequest:
+    container_name: audiobookrequest
+    image: "markbeep/audiobookrequest:1"
+    networks:
+      - internal
+    ports:
+      - "8000:8000"
+    environment:
+      - ABR_APP__PORT=8000
+    volumes:
+      - ~/services/audiobookrequest/config:/config
+    restart: always
+
+  # Audiobookshelf — audiobook library + player. Reads audiobooks straight from the mill
+  # (edge) download folder, which monster mounts at /mnt/remote over sshfs. AudioBookRequest
+  # -> Prowlarr grabs into rtorrent's "audiobooks" category (complete/audiobooks on mill),
+  # which surfaces here at /mnt/remote/audiobooks. Library mounted read-only so ABS can't
+  # disturb the seeding torrents; its own data lives in /config + /metadata on local disk.
+  # Exposed as audiobooks.rowan.sh via the edge Caddy + tailnet-relay (server-compose.yaml,
+  # socat 13378 hop). Container listens on 80.
+  audiobookshelf:
+    container_name: audiobookshelf
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    networks:
+      - internal
+    ports:
+      - "13378:80"
+    environment:
+      - TZ=UTC
+    volumes:
+      - /mnt/remote/audiobooks:/audiobooks:ro
+      - ~/services/audiobookshelf/config:/config
+      - ~/services/audiobookshelf/metadata:/metadata
+    restart: always
+
+  # Audiobookshelf periodic scan. ABR triggers a scan at grab-time (too early — the torrent
+  # is still downloading), and ABS's file-watcher can't see new files over the sshfs mount,
+  # so completed audiobook downloads otherwise wouldn't be picked up until a manual scan.
+  # This pings the ABS scan API every 10 min. ABS_API_KEY / ABS_LIBRARY_ID come from .env
+  # (kept out of the repo). Same loop pattern as immich-backup.
+  audiobookshelf-scan:
+    image: alpine:3.20
+    container_name: audiobookshelf_scan
+    networks:
+      - internal
+    environment:
+      ABS_API_KEY: ${ABS_API_KEY:?set ABS_API_KEY in .env}
+      ABS_LIBRARY_ID: ${ABS_LIBRARY_ID:?set ABS_LIBRARY_ID in .env}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        until apk add --no-cache curl >/dev/null 2>&1; do
+          echo "[abs-scan] installing curl (waiting for network)..."; sleep 10;
+        done
+        while true; do
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Authorization: Bearer $$ABS_API_KEY" "http://audiobookshelf:80/api/libraries/$$ABS_LIBRARY_ID/scan")
+          echo "[abs-scan] $(date -u +%FT%TZ) scan -> $$code"
+          sleep 600;
+        done
+    depends_on:
+      - audiobookshelf
+    restart: unless-stopped
 
   immich-server:
     image: ghcr.io/immich-app/immich-server:release
