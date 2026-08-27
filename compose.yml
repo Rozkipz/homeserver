@@ -164,6 +164,29 @@ services:
       - /mnt/drive11/Movies:/Movies11
     restart: always
 
+  # Tautulli — Plex monitoring / watch history / stats. Tailnet-only on purpose: no Caddy vhost
+  # and no tailnet-relay hop on the edge host, so reach it at http://<monster tailnet IP>:8181.
+  # On `internal` so the setup wizard's Plex connection is http://plex:32400 (Docker DNS).
+  # Plex logs mounted read-only so Tautulli can show them (Settings > Plex Media Server > Logs);
+  # the path is where the LSIO plex image keeps them under /config.
+  tautulli:
+    container_name: tautulli
+    image: lscr.io/linuxserver/tautulli:latest
+    networks:
+      - internal
+    ports:
+      - "8181:8181"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    volumes:
+      - ~/services/tautulli/config:/config
+      - "~/services/plex/config/Library/Application Support/Plex Media Server/Logs:/logs:ro"
+    depends_on:
+      - plex
+    restart: always
+
   radarr:
     container_name: radarr
     image: lscr.io/linuxserver/radarr:latest
