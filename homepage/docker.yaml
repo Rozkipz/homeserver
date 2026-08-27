@@ -1,0 +1,5 @@
+# Docker connection used for container status/CPU/RAM on tiles (`server: monster` in services.yaml).
+# Goes through the read-only docker-socket-proxy sidecar in compose.yml, never the raw socket.
+monster:
+  host: dockerproxy
+  port: 2375

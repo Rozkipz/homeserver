@@ -32,6 +32,16 @@ ssh <edge-host> 'docker compose up -d && docker exec caddy caddy reload --config
 
 Services that live on the media host but are exposed publicly (Immich, Jellyseerr, AudioBookRequest, Audiobookshelf, Headplane) need both a `socat` hop in `tailnet-relay` and a `reverse_proxy http://tailscale:<port>` block in the Caddyfile. Tailnet-only services (e.g. Tautulli on 8181) get neither.
 
+### Dashboard (Homepage)
+
+`homepage/` holds the [Homepage](https://gethomepage.dev) config — tailnet-only on port 80 of the media host (http://100.64.0.3/). Tiles are static entries in `homepage/services.yaml` (with `container:` for a live docker status dot, and `widget:` for app stats); plain links, including external sites, go in `homepage/bookmarks.yaml`. No secrets in the repo: widgets reference `{{HOMEPAGE_VAR_*}}`, which `homepage/collect-keys.sh` fills into the host's `.env` from each app's own config file. Deploy config changes with:
+
+```sh
+scp homepage/*.yaml <media-host>:~/services/homepage/config/
+```
+
+Homepage hot-reloads its YAML, so no restart is needed for config edits. After adding a service that needs a key: `scp homepage/collect-keys.sh <media-host>:~/homeserver/homepage/ && ssh <media-host> 'sh ~/homeserver/homepage/collect-keys.sh && cd ~/homeserver && docker compose up -d homepage'`.
+
 ### Storage & Immich
 
 - Data drives are independent filesystems mounted at `/mnt/drive1` … `/mnt/driveN` (not pooled/RAID).

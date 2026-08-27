@@ -1,0 +1,29 @@
+# Plain links — https://gethomepage.dev/configs/bookmarks/
+# Groups here share the layout table in settings.yaml with services.yaml groups.
+- Public (rowan.sh):
+    - Immich:
+        - abbr: IM
+          href: https://immich.rowan.sh
+    - Jellyseerr:
+        - abbr: JS
+          href: https://jellyseerr.rowan.sh
+    - Audiobookshelf:
+        - abbr: AB
+          href: https://audiobooks.rowan.sh
+    - AudioBookRequest:
+        - abbr: AR
+          href: https://audiobookrequest.rowan.sh
+    - Headplane:
+        - abbr: HP
+          href: https://hs.rowan.sh
+    - ruTorrent:
+        - abbr: RT
+          href: https://rt.rowan.sh
+
+- Trackers:
+    - IPTorrents:
+        - abbr: IPT
+          href: https://ipt.workisboring.net/
+    - TorrentDay:
+        - abbr: TD
+          href: https://torrentday.workisboring.net/

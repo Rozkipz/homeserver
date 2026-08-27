@@ -2,20 +2,6 @@
 # Tailscale runs on the host OS (not Docker) so you can SSH to the machine on its tailnet IP.
 # *arr: use Docker DNS (http://prowlarr:9696 etc.), not localhost.
 services:
-  heimdall:
-    image: lscr.io/linuxserver/heimdall:latest
-    container_name: heimdall
-    networks:
-      - internal
-    ports:
-      - "8087:80"
-    environment:
-      - PUID=1000
-      - PGID=1000
-    volumes:
-      - ~/services/heimdall/config:/config
-    restart: always
-
   archivebox:
     container_name: archivebox
     image: "archivebox/archivebox:latest"
@@ -455,6 +441,67 @@ services:
       - ~/services/headplane/headscale-ro:/etc/headscale:ro
     restart: unless-stopped
 
+
+  # Homepage (gethomepage.dev) — dashboard (replaced Heimdall, removed 2026-08-27). Tailnet-only: no Caddy vhost,
+  # no relay hop; open http://<monster tailnet IP>/ (host port 80). Config is tracked in this repo under
+  # homepage/ and copied to ~/services/homepage/config (see README). Tiles show container
+  # status via the dockerproxy sidecar below and app stats via per-app API keys, passed in as
+  # HOMEPAGE_VAR_* from .env — populate those with `sh homepage/collect-keys.sh` on the host.
+  # Drives are mounted read-only only so the header can show per-drive usage.
+  homepage:
+    container_name: homepage
+    image: ghcr.io/gethomepage/homepage:latest
+    networks:
+      - internal
+    ports:
+      - "80:3000"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      # Host header allow-list (Homepage refuses other Host values). Port 80 = bare hostnames.
+      - HOMEPAGE_ALLOWED_HOSTS=100.64.0.3,monster,monster.internal.rowan.sh,localhost
+      - HOMEPAGE_VAR_PLEX_TOKEN=${HOMEPAGE_VAR_PLEX_TOKEN:?run homepage/collect-keys.sh on the host}
+      - HOMEPAGE_VAR_TAUTULLI_KEY=${HOMEPAGE_VAR_TAUTULLI_KEY:?run homepage/collect-keys.sh on the host}
+      - HOMEPAGE_VAR_JELLYSEERR_KEY=${HOMEPAGE_VAR_JELLYSEERR_KEY:?run homepage/collect-keys.sh on the host}
+      - HOMEPAGE_VAR_ABS_KEY=${HOMEPAGE_VAR_ABS_KEY:?run homepage/collect-keys.sh on the host}
+      - HOMEPAGE_VAR_SONARR_KEY=${HOMEPAGE_VAR_SONARR_KEY:?run homepage/collect-keys.sh on the host}
+      - HOMEPAGE_VAR_RADARR_KEY=${HOMEPAGE_VAR_RADARR_KEY:?run homepage/collect-keys.sh on the host}
+      - HOMEPAGE_VAR_PROWLARR_KEY=${HOMEPAGE_VAR_PROWLARR_KEY:?run homepage/collect-keys.sh on the host}
+      - HOMEPAGE_VAR_BAZARR_KEY=${HOMEPAGE_VAR_BAZARR_KEY:?run homepage/collect-keys.sh on the host}
+    volumes:
+      - ~/services/homepage/config:/app/config
+      - /mnt/drive1:/mnt/drive1:ro
+      - /mnt/drive2:/mnt/drive2:ro
+      - /mnt/drive3:/mnt/drive3:ro
+      - /mnt/drive4:/mnt/drive4:ro
+      - /mnt/drive5:/mnt/drive5:ro
+      - /mnt/drive6:/mnt/drive6:ro
+      - /mnt/drive7:/mnt/drive7:ro
+      - /mnt/drive8:/mnt/drive8:ro
+      - /mnt/drive9:/mnt/drive9:ro
+      - /mnt/drive10:/mnt/drive10:ro
+      - /mnt/drive11:/mnt/drive11:ro
+    depends_on:
+      - dockerproxy
+    restart: always
+
+  # Read-only view of the Docker API for Homepage (container list/status/stats only; POST
+  # disabled). Keeps the raw socket out of the dashboard container. No published ports —
+  # reachable only as http://dockerproxy:2375 on `internal`.
+  dockerproxy:
+    container_name: dockerproxy
+    image: tecnativa/docker-socket-proxy:latest
+    networks:
+      - internal
+    environment:
+      - CONTAINERS=1
+      - SERVICES=1
+      - TASKS=1
+      - POST=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: always
 
   # FileBrowser Quantum (gtsteffaniak fork) — web file manager, replaced filegator.
   # The original filebrowser/filebrowser is archived 2026-09-01 with ~10 unfixed

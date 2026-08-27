@@ -1,0 +1,30 @@
+# Header widgets — https://gethomepage.dev/widgets/info/
+- resources:
+    label: monster
+    cpu: true
+    memory: true
+    uptime: true
+- resources:
+    label: drives
+    expanded: false
+    disk:
+      - /mnt/drive1
+      - /mnt/drive2
+      - /mnt/drive3
+      - /mnt/drive4
+      - /mnt/drive5
+      - /mnt/drive6
+      - /mnt/drive7
+      - /mnt/drive8
+      - /mnt/drive9
+      - /mnt/drive10
+      - /mnt/drive11
+- datetime:
+    text_size: xl
+    format:
+      dateStyle: short
+      timeStyle: short
+      hour12: false
+- search:
+    provider: duckduckgo
+    target: _blank

@@ -1,0 +1,28 @@
+# Homepage settings — https://gethomepage.dev/configs/settings/
+title: monster
+favicon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png
+theme: dark
+color: slate
+headerStyle: boxed
+statusStyle: dot
+hideVersion: true
+target: _self   # internal tiles open in the same tab; bookmarks override this to _blank
+layout:
+  Media:
+    style: row
+    columns: 5
+  Downloads:
+    style: row
+    columns: 5
+  Photos & Files:
+    style: row
+    columns: 4
+  Infrastructure:
+    style: row
+    columns: 4
+  Public (rowan.sh):
+    style: row
+    columns: 6
+  Trackers:
+    style: row
+    columns: 2

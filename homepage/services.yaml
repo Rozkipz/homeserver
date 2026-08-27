@@ -1,0 +1,155 @@
+# Service tiles — https://gethomepage.dev/configs/services/
+# Internal links use monster's tailnet IP (MagicDNS short names don't resolve everywhere).
+# `server`/`container` add a live docker status dot + CPU/RAM; `widget` pulls app stats through
+# Docker DNS on the `internal` network. Keys come from HOMEPAGE_VAR_* env (see collect-keys.sh).
+# Add external links here (any `href`) or as plain bookmarks in bookmarks.yaml.
+
+- Media:
+    - Plex:
+        icon: plex.png
+        href: http://100.64.0.3:32400/web
+        description: Movies & TV
+        server: monster
+        container: plex
+        # HTTPS on purpose: Plex runs with "Secure connections: Required", which silently
+        # stalls plain HTTP from anything it doesn't consider local (Docker subnet included).
+        # Homepage's proxy accepts Plex's self-signed *.plex.direct cert.
+        widget:
+          type: plex
+          url: https://plex:32400
+          key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+    - Tautulli:
+        icon: tautulli.png
+        href: http://100.64.0.3:8181
+        description: Plex stats & history
+        server: monster
+        container: tautulli
+        widget:
+          type: tautulli
+          url: http://tautulli:8181
+          key: "{{HOMEPAGE_VAR_TAUTULLI_KEY}}"
+    - Jellyseerr:
+        icon: jellyseerr.png
+        href: http://100.64.0.3:5055
+        description: Requests
+        server: monster
+        container: jellyseerr
+        widget:
+          type: jellyseerr
+          url: http://jellyseerr:5055
+          key: "{{HOMEPAGE_VAR_JELLYSEERR_KEY}}"
+    - Audiobookshelf:
+        icon: audiobookshelf.png
+        href: http://100.64.0.3:13378
+        description: Audiobooks
+        server: monster
+        container: audiobookshelf
+        widget:
+          type: audiobookshelf
+          url: http://audiobookshelf:80
+          key: "{{HOMEPAGE_VAR_ABS_KEY}}"
+    - AudioBookRequest:
+        icon: mdi-book-plus
+        href: http://100.64.0.3:8000
+        description: Audiobook requests
+        server: monster
+        container: audiobookrequest
+
+- Downloads:
+    - Sonarr:
+        icon: sonarr.png
+        href: http://100.64.0.3:8989
+        description: TV
+        server: monster
+        container: sonarr
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
+    - Radarr:
+        icon: radarr.png
+        href: http://100.64.0.3:7878
+        description: Movies
+        server: monster
+        container: radarr
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://100.64.0.3:9696
+        description: Indexers
+        server: monster
+        container: prowlarr
+        widget:
+          type: prowlarr
+          url: http://prowlarr:9696
+          key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
+    - Bazarr:
+        icon: bazarr.png
+        href: http://100.64.0.3:6767
+        description: Subtitles
+        server: monster
+        container: bazarr
+        widget:
+          type: bazarr
+          url: http://bazarr:6767
+          key: "{{HOMEPAGE_VAR_BAZARR_KEY}}"
+    - ruTorrent:
+        icon: rutorrent.png
+        href: https://rt.rowan.sh
+        description: Seedbox on mill (edge host)
+        target: _blank
+
+- Photos & Files:
+    - Immich:
+        icon: immich.png
+        href: http://100.64.0.3:2283
+        description: Photos
+        server: monster
+        container: immich_server
+        # Widget needs an API key created in Immich > Account Settings > API Keys;
+        # add it as HOMEPAGE_VAR_IMMICH_KEY in .env and uncomment.
+        # widget:
+        #   type: immich
+        #   url: http://immich_server:2283
+        #   key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
+        #   version: 2
+    - FileBrowser:
+        icon: filebrowser.png
+        href: http://100.64.0.3:8088
+        description: Drives & home
+        server: monster
+        container: filebrowser
+    - ArchiveBox:
+        icon: archivebox.png
+        href: http://100.64.0.3:8010
+        description: Web archive
+        server: monster
+        container: archivebox
+    - Duplicati:
+        icon: duplicati.png
+        href: http://100.64.0.3:8200
+        description: Backups
+        server: monster
+        container: duplicati
+
+- Infrastructure:
+    - Headplane:
+        icon: headscale.png
+        href: http://100.64.0.3:3000/admin
+        description: Headscale UI
+        server: monster
+        container: headplane
+    - Headscale:
+        icon: headscale.png
+        href: https://headscale.rowan.sh
+        description: Control plane on mill
+        target: _blank
+    - FlareSolverr:
+        icon: flaresolverr.png
+        href: http://100.64.0.3:8191
+        description: Cloudflare solver for Prowlarr
+        server: monster
+        container: flaresolverr
