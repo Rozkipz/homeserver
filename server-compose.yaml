@@ -22,6 +22,13 @@ services:
     # default CMD runs containerboot (tailscaled + tailscale up + TS_AUTHKEY). command: tailscaled alone → NeedsLogin forever
     networks:
       - docker_bridge
+    # Ports for anything sharing this netns (tailnet-relay, unpackerr) MUST be declared
+    # here, not on that service — network_mode: service:tailscale means they have no
+    # netns of their own to publish from.
+    # 25565/tcp = Minecraft Java, relayed below. This is the only raw-TCP service that
+    # bypasses Caddy; Caddy has no layer4 plugin so it cannot terminate the MC protocol.
+    ports:
+      - 25565:25565/tcp
     depends_on:
       - headscale
     restart: always
@@ -36,6 +43,8 @@ services:
       - .env
     environment:
       TAILNET_RELAY_TARGET: ${HOMESERVER_TAILNET_IP:?set HOMESERVER_TAILNET_IP in .env}
+      # Minecraft runs on the desktop, not the media host, so it needs its own target.
+      MINECRAFT_RELAY_TARGET: ${MINECRAFT_TAILNET_IP:?set MINECRAFT_TAILNET_IP in .env}
     depends_on:
       - tailscale
     entrypoint: ["/bin/sh", "-c"]
@@ -43,22 +52,16 @@ services:
       - |
         socat tcp-listen:2284,fork,reuseaddr tcp-connect:$${TAILNET_RELAY_TARGET}:2283 &
         socat tcp-listen:2300,fork,reuseaddr tcp-connect:$${TAILNET_RELAY_TARGET}:3000 &
+        socat tcp-listen:5055,fork,reuseaddr tcp-connect:$${TAILNET_RELAY_TARGET}:5055 &
+        socat tcp-listen:8000,fork,reuseaddr tcp-connect:$${TAILNET_RELAY_TARGET}:8000 &
+        socat tcp-listen:13378,fork,reuseaddr tcp-connect:$${TAILNET_RELAY_TARGET}:13378 &
+        socat tcp-listen:25565,fork,reuseaddr tcp-connect:$${MINECRAFT_RELAY_TARGET}:25565 &
         wait
     restart: always
 
-  ombi:
-    container_name: ombi
-    image: "linuxserver/ombi:latest"
-    networks:
-      - docker_bridge
-    ports:
-      - "3579:3579"
-    environment:
-      - PUID=1001
-      - PGID=1001
-    volumes:
-      - ~/services/ombi/config:/config
-    restart: always
+  # Jellyseerr replaced Ombi; it now runs on the media host (see compose.yml) and is
+  # reached over the tailnet via the tailnet-relay above (listen 5055) + Caddy. Nothing
+  # is published here anymore — this fixes the old Ombi-on-public-port-3579 exposure.
 
   headscale:
     image: headscale/headscale:v0.28.0  # Do not update willy nilly, you should check for breaking upgrades first
@@ -81,7 +84,6 @@ services:
     env_file:
       - .env
     depends_on:
-      - ombi
       - rutorrent
       - tailnet-relay
     volumes:

@@ -9,7 +9,7 @@
 Two hosts on a Tailscale tailnet:
 
 - **Media host** — runs the main `compose.yml` stack (Immich, Plex, the *arr apps, etc.) on the home network.
-- **Edge host** — runs `server-compose.yaml`: a Caddy reverse proxy + Tailscale that exposes selected services publicly and proxies them back to the media host over the tailnet.
+- **Edge host** — runs `server-compose.yaml`: a Caddy reverse proxy + Tailscale that exposes selected services publicly and proxies them back to the media host over the tailnet. Its Caddy config is `Caddyfile` in this repo.
 
 ### Deploying
 
@@ -21,6 +21,16 @@ ssh <media-host> 'cd ~/homeserver && docker compose up -d'
 ```
 
 Don't use `--remove-orphans` — it would remove the Tailscale helper containers that aren't defined in `compose.yml`.
+
+On the edge host the live files are **not** the repo checkout: compose runs from `~/compose.yaml` and Caddy reads `~/services/caddy/Caddyfile`. Deploy with:
+
+```sh
+scp server-compose.yaml <edge-host>:~/compose.yaml
+scp Caddyfile <edge-host>:~/services/caddy/Caddyfile
+ssh <edge-host> 'docker compose up -d && docker exec caddy caddy reload --config /etc/caddy/Caddyfile'
+```
+
+Services that live on the media host but are exposed publicly (Immich, Jellyseerr, AudioBookRequest, Audiobookshelf, Headplane) need both a `socat` hop in `tailnet-relay` and a `reverse_proxy http://tailscale:<port>` block in the Caddyfile. Tailnet-only services (e.g. Tautulli on 8181) get neither.
 
 ### Storage & Immich
 

@@ -1,0 +1,84 @@
+# HOMESERVER_TAILNET_IP: set in France docker compose .env (tsmonster 100.x, see `tailscale status` on France).
+# Things over TS must use "http://tailscale:PORT" and the PORT added to the relay
+
+hs.rowan.sh {
+	@root path /
+	redir @root /admin 308
+
+	reverse_proxy http://tailscale:2300
+}
+
+headscale.rowan.sh {
+	reverse_proxy http://headscale:8080 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+		header_up X-Real-IP {remote_host}
+	}
+}
+
+jellyseerr.rowan.sh {
+	reverse_proxy http://tailscale:5055 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+audiobookrequest.rowan.sh {
+	reverse_proxy http://tailscale:8000 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+audiobooks.rowan.sh {
+	reverse_proxy http://tailscale:13378 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+immich.rowan.sh {
+	reverse_proxy http://tailscale:2284 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		transport http {
+			versions 1.1
+		}
+	}
+}
+
+#rt.rowan.sh {
+#	reverse_proxy http://rutorrent:8080 {
+#		header_up Host {host}
+#		header_up X-Forwarded-Proto https
+#	}
+#}
+
+rt.rowan.sh {
+    handle /RPC2* {
+        reverse_proxy http://rutorrent:8000 {
+            header_up Host {host}
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-For {remote_host}
+        }
+    }
+    handle {
+        reverse_proxy http://rutorrent:8080 {
+            header_up Host {host}
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-For {remote_host}
+        }
+    }
+}
+
+:80 {
+	respond "Not found" 404
+}
