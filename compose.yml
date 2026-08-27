@@ -453,6 +453,7 @@ services:
     image: ghcr.io/gethomepage/homepage:latest
     networks:
       - internal
+      - immich_internal   # so the Immich widget can reach immich_server by Docker DNS
     ports:
       - "80:3000"
     environment:
@@ -469,6 +470,8 @@ services:
       - HOMEPAGE_VAR_RADARR_KEY=${HOMEPAGE_VAR_RADARR_KEY:?run homepage/collect-keys.sh on the host}
       - HOMEPAGE_VAR_PROWLARR_KEY=${HOMEPAGE_VAR_PROWLARR_KEY:?run homepage/collect-keys.sh on the host}
       - HOMEPAGE_VAR_BAZARR_KEY=${HOMEPAGE_VAR_BAZARR_KEY:?run homepage/collect-keys.sh on the host}
+      # Immich key is created by hand in the Immich UI (not on disk), so collect-keys.sh can't fetch it.
+      - HOMEPAGE_VAR_IMMICH_KEY=${HOMEPAGE_VAR_IMMICH_KEY:?create an API key in Immich and add it to .env}
     volumes:
       - ~/services/homepage/config:/app/config
       - /mnt/drive1:/mnt/drive1:ro

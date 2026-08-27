@@ -109,13 +109,13 @@
         description: Photos
         server: monster
         container: immich_server
-        # Widget needs an API key created in Immich > Account Settings > API Keys;
-        # add it as HOMEPAGE_VAR_IMMICH_KEY in .env and uncomment.
-        # widget:
-        #   type: immich
-        #   url: http://immich_server:2283
-        #   key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
-        #   version: 2
+        # Key = an Immich API key (Account Settings > API Keys), stored as HOMEPAGE_VAR_IMMICH_KEY
+        # in the host .env. Homepage is also on immich_internal so immich_server resolves.
+        widget:
+          type: immich
+          url: http://immich_server:2283
+          key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
+          version: 2
     - FileBrowser:
         icon: filebrowser.png
         href: http://100.64.0.3:8088
