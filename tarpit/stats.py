@@ -1,15 +1,21 @@
-"""Render the Caddy tarpit access log as an HTML leaderboard.
+"""Render the tarpit hold log as an HTML leaderboard.
 
-Served at tarpit.rowan.sh (see the vhost in ../Caddyfile). Reads the JSON access
-log Caddy writes for the :80 / :443 catch-alls, aggregates per client IP, and
-shows who got stuck and for how long.
+Served at tarpit.rowan.sh (see the vhost in ../Caddyfile). Aggregates per client
+IP and shows who got stuck and for how long.
+
+Reads the log the TARPIT writes (tarpit.py), not Caddy's access log. Caddy cannot
+supply the duration: once a response is streaming it logs when the headers are
+flushed, so every hold appears there as 0.0000s however long the client actually
+stayed — measured a 20s hold logged as 0.0000s. The tarpit holds the socket, so
+it is the only thing that knows.
 
 Deliberately dependency-free (stdlib only) so it runs on a bare python:3-alpine
 with no build step or pip install.
 
 Env:
-  TARPIT_LOG_GLOB  glob for the log files        (default /logs/tarpit.log*)
+  TARPIT_LOG_GLOB  glob for the hold logs        (default /holds/holds.log*)
   TARPIT_EXCLUDE   comma-separated IPs to hide   (default empty)
+  TARPIT_MIN_HOLD  ignore holds shorter than this (default 1.0 seconds)
   TARPIT_CACHE_TTL seconds between re-parses     (default 30)
   TARPIT_PORT      listen port                   (default 8082)
 """
@@ -23,12 +29,17 @@ import os
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-LOG_GLOB = os.environ.get("TARPIT_LOG_GLOB", "/logs/tarpit.log*")
+LOG_GLOB = os.environ.get("TARPIT_LOG_GLOB", "/holds/holds.log*")
 EXCLUDE = {x.strip() for x in os.environ.get("TARPIT_EXCLUDE", "").split(",") if x.strip()}
+# Banner-grabbers read the headers and hang up in milliseconds. Those are not holds
+# in any meaningful sense, and a table full of 0s rows buries the real ones, so they
+# are dropped rather than rounded. The count is still reported in the footer.
+MIN_HOLD = float(os.environ.get("TARPIT_MIN_HOLD", "1.0"))
 CACHE_TTL = float(os.environ.get("TARPIT_CACHE_TTL", "30"))
 PORT = int(os.environ.get("TARPIT_PORT", "8082"))
 
 _cache = {"at": 0.0, "html": ""}
+_skipped = [0]   # holds below MIN_HOLD, reported in the footer
 
 
 def _open(path):
@@ -37,13 +48,14 @@ def _open(path):
 
 
 def load():
-    """Parse every log file into a list of hold records.
+    """Parse every hold log into a list of records, dropping instant disconnects.
 
-    A 308 with ~no duration is Caddy's automatic HTTP->HTTPS redirect for a real
-    vhost, which shares the :80 server and so lands in this log. Those are not
-    tarpit holds and would badly skew the table, so they are dropped.
+    One line per connection, written by tarpit.py when the client finally lets
+    go. No filtering needed: only proxied tarpit traffic reaches the tarpit, so
+    unlike Caddy's access log there are no redirects or real-vhost hits mixed in.
     """
     rows = []
+    _skipped[0] = 0
     for path in sorted(glob.glob(LOG_GLOB)):
         try:
             with _open(path) as fh:
@@ -55,22 +67,21 @@ def load():
                         d = json.loads(line)
                     except ValueError:
                         continue
-                    req = d.get("request") or {}
-                    ip = req.get("remote_ip") or "?"
+                    ip = d.get("ip") or "?"
                     if ip in EXCLUDE:
                         continue
-                    dur = float(d.get("duration") or 0.0)
-                    if d.get("status") == 308 and dur < 0.5:
+                    held = float(d.get("held") or 0.0)
+                    if held < MIN_HOLD:
+                        _skipped[0] += 1
                         continue
-                    ua = (req.get("headers", {}).get("User-Agent") or ["-"])[0]
                     rows.append({
                         "ip": ip,
-                        "host": req.get("host") or "",
-                        "uri": req.get("uri") or "",
-                        "dur": dur,
-                        "ua": ua,
+                        "host": d.get("host") or "",
+                        "uri": d.get("uri") or "",
+                        "dur": float(d.get("held") or 0.0),
+                        "ua": d.get("ua") or "-",
                         "ts": float(d.get("ts") or 0),
-                        "tls": bool(req.get("tls")),
+                        "tls": (d.get("proto") or "").lower() == "https",
                     })
         except OSError:
             continue
@@ -78,6 +89,10 @@ def load():
 
 
 def humandur(s):
+    # Banner-grabbers read the headers and hang up in milliseconds; rounding those
+    # to a flat "0s" reads like a bug rather than a real (very short) hold.
+    if 0 < s < 1:
+        return "<1s"
     s = int(round(s))
     if s >= 3600:
         return "%dh %02dm" % (s // 3600, (s % 3600) // 60)
@@ -185,9 +200,14 @@ def render():
                     time.strftime("%d %b %H:%M", time.gmtime(a["last"]))))
         out.append("</tbody></table></div>")
 
+    skipped = _skipped[0]
+    note = (" &middot; %s connection%s that read the headers and hung up in under %gs "
+            "not listed" % ("{:,}".format(skipped), "" if skipped == 1 else "s",
+                            MIN_HOLD)) if skipped else ""
     out.append("<footer>Updated %s UTC &middot; refreshes every %ds &middot; "
-               "times are how long each client stayed connected before giving up."
-               "</footer></div>" % (time.strftime("%d %b %Y %H:%M:%S", time.gmtime()), int(CACHE_TTL)))
+               "times are how long each client stayed connected before giving up%s."
+               "</footer></div>" % (time.strftime("%d %b %Y %H:%M:%S", time.gmtime()),
+                                    int(CACHE_TTL), note))
     return "\n".join(out)
 
 

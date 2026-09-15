@@ -102,59 +102,14 @@ services:
       TARPIT_DELAY: "10"
       TARPIT_MAX_CONN: "2000"
       TARPIT_MAX_HOLD: "86400"
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        cat > /tarpit.py <<'EOF'
-        import asyncio, os, random, string
-
-        DELAY   = float(os.environ.get("TARPIT_DELAY", "10"))
-        MAXCONN = int(os.environ.get("TARPIT_MAX_CONN", "2000"))
-        MAXHOLD = float(os.environ.get("TARPIT_MAX_HOLD", "86400"))
-
-        HEAD = ("HTTP/1.1 200 OK\r\n"
-                "Server: nginx\r\n"
-                "Content-Type: text/html; charset=utf-8\r\n"
-                "Transfer-Encoding: chunked\r\n"
-                "Cache-Control: no-store\r\n"
-                "\r\n")
-
-        live = 0
-
-        def chunk(s):
-            b = s.encode()
-            return b"%x\r\n%s\r\n" % (len(b), b)
-
-        async def handle(reader, writer):
-            global live
-            if live >= MAXCONN:
-                writer.close(); return
-            live += 1
-            loop = asyncio.get_event_loop(); start = loop.time()
-            try:
-                try: await asyncio.wait_for(reader.read(8192), timeout=15)
-                except asyncio.TimeoutError: pass
-                writer.write(HEAD.encode()); await writer.drain()
-                writer.write(chunk("<html><head><title>Loading</title></head><body>"))
-                await writer.drain()
-                while loop.time() - start < MAXHOLD:
-                    await asyncio.sleep(DELAY)
-                    pad = "".join(random.choices(string.hexdigits.lower(), k=10))
-                    writer.write(chunk("<!-- %s -->" % pad)); await writer.drain()
-            except Exception:
-                pass
-            finally:
-                live -= 1
-                try: writer.close()
-                except Exception: pass
-
-        async def main():
-            s = await asyncio.start_server(handle, "0.0.0.0", 8081)
-            async with s: await s.serve_forever()
-
-        asyncio.run(main())
-        EOF
-        exec python -u /tarpit.py
+      TARPIT_HOLD_LOG: /holds/holds.log
+    volumes:
+      - ~/services/tarpit/tarpit.py:/tarpit.py:ro
+      # Writable: the tarpit records its own holds here. It has to, because Caddy
+      # cannot — once the response is streaming Caddy logs when the headers flush,
+      # so a 20s hold lands in its access log as 0.0000s. Measured, not assumed.
+      - ~/services/tarpit/holds:/holds
+    command: ["python", "-u", "/tarpit.py"]
     restart: always
 
   # tarpit-stats — renders the tarpit access log as a table at tarpit.rowan.sh.
@@ -172,13 +127,14 @@ services:
     networks:
       - docker_bridge
     environment:
-      TARPIT_LOG_GLOB: /logs/tarpit.log*
+      TARPIT_LOG_GLOB: /holds/holds.log*
       TARPIT_EXCLUDE: "141.98.255.243"
       TARPIT_CACHE_TTL: "30"
       TARPIT_PORT: "8082"
     volumes:
       - ~/services/tarpit/stats.py:/stats.py:ro
-      - ~/services/caddy/logs:/logs:ro
+      # Read-only: the dashboard can never corrupt the record it renders.
+      - ~/services/tarpit/holds:/holds:ro
     command: ["python", "-u", "/stats.py"]
     restart: always
 
