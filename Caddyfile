@@ -79,6 +79,50 @@ rt.rowan.sh {
     }
 }
 
+# HTTPS catch-all: same tarpit, for scanners that come in on :443.
+#
+# To tarpit an unknown hostname we have to COMPLETE a TLS handshake for it, which needs
+# a certificate. `tls internal { on_demand }` mints one per SNI from Caddy's own local
+# CA, on demand. Deliberately the internal CA and not ACME: issuing public certs for
+# names we do not own would fail validation anyway, and letting strangers drive
+# Let's Encrypt issuance is a fast route to a rate-limit ban. Internal issuance is
+# local, ~12ms, and never touches the network.
+#
+# The cert is untrusted, which does not matter: scanners skip verification, and a real
+# visitor who lands here was going somewhere that does not exist anyway.
+#
+# No default_sni needed — verified on 2.11.4 that a bare-IP connection with no SNI
+# falls back to the connection's own address as the server name and is issued for that.
+#
+# This does NOT affect the named vhosts: they keep their own ACME certificates. Caddy
+# builds a separate automation policy per subject, and matches named hosts before this
+# block (confirmed with `caddy adapt`).
+#
+# Watch caddy's memory: every distinct SNI caches a cert, and the interval/burst limits
+# that used to bound this were removed in Caddy 2.11.
+:443 {
+	log {
+		output file /var/log/caddy/tarpit.log {
+			roll_size 10MiB
+			roll_keep 5
+			roll_keep_for 2160h
+			mode 644
+		}
+		format json
+	}
+
+	tls internal {
+		on_demand
+	}
+
+	reverse_proxy http://tarpit:8081 {
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 300s
+		}
+	}
+}
+
 # Catch-all: anything that does not match a vhost above — bare-IP probes, random
 # Host headers, vulnerability scanners. Previously answered a clean 404, which tells
 # a scanner the box is alive and lets it move on in milliseconds. Now it goes to the
