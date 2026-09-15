@@ -146,6 +146,10 @@ services:
       - ~/services/tarpit/stats.py:/stats.py:ro
       # Read-only: the dashboard can never corrupt the record it renders.
       - ~/services/tarpit/holds:/holds:ro
+      # Writable scratch for the geolocation cache. It cannot live under /holds
+      # because that is read-only, and without a writable path every render would
+      # re-query the geolocation API instead of reusing what it already knows.
+      - ~/services/tarpit/cache:/cache
     command: ["python", "-u", "/stats.py"]
     restart: always
 

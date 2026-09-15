@@ -18,7 +18,7 @@ Env:
   TARPIT_MIN_HOLD  ignore holds shorter than this (default 1.0 seconds)
   TARPIT_CACHE_TTL seconds between re-parses     (default 30)
   TARPIT_GEO       set to 0 to disable geolocation lookups
-  TARPIT_GEO_CACHE where to persist ip->country   (default /holds/geo-cache.json)
+  TARPIT_GEO_CACHE where to persist ip->country   (default /cache/geo-cache.json)
   TARPIT_PORT      listen port                   (default 8082)
 """
 
@@ -49,7 +49,10 @@ PORT = int(os.environ.get("TARPIT_PORT", "8082"))
 _cache = {"at": 0.0, "html": ""}
 
 GEO_ON = os.environ.get("TARPIT_GEO", "1") != "0"
-GEO_CACHE = os.environ.get("TARPIT_GEO_CACHE", "/holds/geo-cache.json")
+# NOT under /holds: that is mounted read-only so the dashboard can never corrupt the
+# hold log, which also means it cannot write a cache there. Without a writable path
+# every render re-queries the geolocation API and burns the rate limit.
+GEO_CACHE = os.environ.get("TARPIT_GEO_CACHE", "/cache/geo-cache.json")
 _geo = {}          # ip -> {"cc","country","as"}
 _geo_loaded = [False]
 
@@ -64,20 +67,6 @@ def flag(cc):
     if len(cc) != 2 or not cc.isalpha():
         return ""
     return "".join(chr(0x1F1E6 + ord(c) - ord("A")) for c in cc)
-
-
-def _routable(ip):
-    """Is this worth asking a geolocation service about?
-
-    Prefix matching is not good enough here: "172.2" catches public 172.235.x as
-    well as the private 172.16/12 block, which silently left real hosts unlabelled.
-    """
-    try:
-        a = ipaddress.ip_address(ip)
-    except ValueError:
-        return False
-    return not (a.is_private or a.is_loopback or a.is_link_local
-                or a.is_multicast or a.is_reserved or a.is_unspecified)
 
 
 def _geo_load():
@@ -133,6 +122,21 @@ def geo_lookup(ips):
     if changed:
         _geo_save()
 _skipped = [0]   # holds below MIN_HOLD, reported in the footer
+_private = [0]   # holds from private space (docker gateway), never listed
+
+
+def _routable(ip):
+    """Is this worth asking a geolocation service about?
+
+    Prefix matching is not good enough here: "172.2" catches public 172.235.x as
+    well as the private 172.16/12 block, which silently left real hosts unlabelled.
+    """
+    try:
+        a = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return not (a.is_private or a.is_loopback or a.is_link_local
+                or a.is_multicast or a.is_reserved or a.is_unspecified)
 
 
 def _open(path):
@@ -149,6 +153,7 @@ def load():
     """
     rows = []
     _skipped[0] = 0
+    _private[0] = 0
     for path in sorted(set(glob.glob(LOG_GLOB)) | set(glob.glob(LOG_GLOB_ROTATED))):
         try:
             with _open(path) as fh:
@@ -162,6 +167,13 @@ def load():
                         continue
                     ip = d.get("ip") or "?"
                     if ip in EXCLUDE:
+                        continue
+                    if not _routable(ip):
+                        # Private space never belongs on the board: the only source is
+                        # 192.168.x, the docker bridge gateway standing in for IPv6
+                        # clients whose real address is lost to NAT. Listing the
+                        # gateway reads as though our own network were scanning us.
+                        _private[0] += 1
                         continue
                     held = float(d.get("held") or 0.0)
                     if held < MIN_HOLD:
