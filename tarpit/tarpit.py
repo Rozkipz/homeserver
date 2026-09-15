@@ -89,7 +89,7 @@ def parse_request(raw):
     return out
 
 
-def record(info, held, peer):
+def record(info, held, peer, why="unknown"):
     """Append one hold record. Never let logging break a connection."""
     try:
         try:
@@ -101,7 +101,7 @@ def record(info, held, peer):
                     pass
         except OSError:
             pass
-        row = {"ts": time.time(), "held": round(held, 3),
+        row = {"ts": time.time(), "held": round(held, 3), "end": why,
                "ip": info.get("ip") or peer, "host": info.get("host", ""),
                "uri": info.get("uri", ""), "ua": info.get("ua", ""),
                "proto": info.get("proto", ""), "method": info.get("method", "")}
@@ -124,7 +124,7 @@ async def handle(reader, writer):
     live += 1
     loop = asyncio.get_event_loop()
     start = loop.time()
-    info, peer = {}, ""
+    info, peer, why = {}, "", "unknown"
     try:
         try:
             peer = (writer.get_extra_info("peername") or ("", 0))[0]
@@ -154,19 +154,31 @@ async def handle(reader, writer):
                 writer.write(chunk("<!-- %s -->" % pad))
                 await writer.drain()
 
-        tasks = {asyncio.ensure_future(drip()),
-                 asyncio.ensure_future(reader.read())}
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        drip_task = asyncio.ensure_future(drip())
+        eof_task = asyncio.ensure_future(reader.read())
+        done, pending = await asyncio.wait({drip_task, eof_task},
+                                           return_when=asyncio.FIRST_COMPLETED)
+        # Record WHY the hold ended, so "did they give up or did we drop them?" is a
+        # fact in the log rather than an inference from how close the number sits to
+        # a configured limit.
+        if eof_task in done:
+            why = "client_closed"          # client hung up: their timeout, not ours
+        elif drip_task in done:
+            exc = drip_task.exception()
+            if exc is not None:
+                why = "write_failed"       # peer vanished mid-drip (RST/EPIPE)
+            else:
+                why = "max_hold"           # our TARPIT_MAX_HOLD ceiling
         for t in pending:
             t.cancel()
         for t in done:
             t.exception()  # retrieve, so it is not reported as never-retrieved
     except Exception:
-        pass
+        why = "error"
     finally:
         live -= 1
         held = loop.time() - start
-        record(info, held, peer)
+        record(info, held, peer, why)
         try:
             writer.close()
         except Exception:
