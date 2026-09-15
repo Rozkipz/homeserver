@@ -132,7 +132,7 @@ tarpit.rowan.sh {
 		flush_interval -1
 		transport http {
 			dial_timeout 5s
-			response_header_timeout 300s
+			response_header_timeout {$TARPIT_HEADER_TIMEOUT:300s}
 		}
 	}
 }
@@ -153,7 +153,13 @@ tarpit.rowan.sh {
 # Caddy has no delay/tarpit module (verified against 2.11.4 with `caddy list-modules`),
 # which is why this is a sidecar rather than a directive.
 #
-# response_header_timeout is what bounds OUR side: the upstream deliberately never
+# response_header_timeout no longer caps how long a client is held: the tarpit answers
+# its headers at once, so this is satisfied immediately and the hold runs past it (a
+# client stayed 469s under a 300s setting). It now only guards against the tarpit being
+# wedged or gone. The real ceiling is TARPIT_MAX_HOLD on the tarpit service.
+# Set via TARPIT_HEADER_TIMEOUT in compose rather than as a literal.
+#
+# Historically it DID bound the hold: the upstream deliberately never
 # completes its headers, so without it Caddy would hold the connection indefinitely.
 # A tarpit costs the host a held connection per scanner, so it is capped at both ends
 # — here, and by max-children on the socat listener.
@@ -192,7 +198,7 @@ tarpit.rowan.sh {
 		flush_interval -1
 		transport http {
 			dial_timeout 5s
-			response_header_timeout 300s
+			response_header_timeout {$TARPIT_HEADER_TIMEOUT:300s}
 		}
 	}
 }

@@ -127,7 +127,10 @@ services:
     networks:
       - docker_bridge
     environment:
-      TARPIT_LOG_GLOB: /holds/holds.log*
+      # No trailing wildcard: "holds.log*" also matches sidecar files like a
+      # holds.log.preclean backup, and counting one beside the live log doubles every
+      # figure on the page. Rotations are picked up separately by the code.
+      TARPIT_LOG_GLOB: /holds/holds.log
       # No exclusions. This previously hid 141.98.255.243 as "test traffic", but that
       # is the Mullvad exit mini egresses through, so it was filtering out real visits
       # from the operator's own machine — including the longest hold on record.
@@ -146,6 +149,12 @@ services:
     container_name: caddy
     env_file:
       - .env
+    environment:
+      # Bounds how long Caddy waits for the tarpit's response HEADERS. Since the
+      # tarpit answers immediately this no longer caps hold time — it is a guard for
+      # the case where the tarpit is wedged or missing. Referenced as
+      # {$TARPIT_HEADER_TIMEOUT:300s} in the Caddyfile.
+      TARPIT_HEADER_TIMEOUT: "300s"
     depends_on:
       - rutorrent
       - tailnet-relay
