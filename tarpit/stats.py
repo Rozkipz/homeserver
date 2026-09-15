@@ -279,7 +279,8 @@ def render():
            "<style>%s</style>" % CSS, "<div class=wrap>",
            "<h1>Tarpit</h1>",
            "<p class=sub>Requests to this host that matched no site get handed to a tarpit "
-           "that answers slowly and never finishes. This is who has been stuck in it.</p>"]
+           "that answers slowly and never finishes. This is who has been stuck in it. "
+           "Times are totals: per endpoint, and per client across every endpoint it hit.</p>"]
 
     out.append("<div class=cards>")
     for k, v in (("time wasted", humandur(total)), ("connections held", "{:,}".format(holds)),
@@ -295,17 +296,19 @@ def render():
     else:
         out.append("<div class=tw><table><thead><tr>"
                    "<th>#</th><th>client</th><th>country</th><th>wasted</th><th>hits</th>"
-                   "<th>user agent</th><th>endpoints &amp; time</th><th>last seen</th>"
+                   "<th>user agent</th><th>endpoints &amp; total time</th><th>last seen</th>"
                    "</tr></thead><tbody>")
         for i, a in enumerate(agg, 1):
             ua, _ = a["uas"].most_common(1)[0]
             if len(a["uas"]) > 1:
                 ua += "  (+%d more)" % (len(a["uas"]) - 1)
-            # time per endpoint, not just how many times it was hit
+            # Time per endpoint, summed across every hit on it. Written "18s · 2 hits"
+            # rather than "18s x2", which reads as 18s EACH — the figure is the total,
+            # and the per-IP total is the sum of these lines.
             paths = "<br>".join(
                 "%s <span class=pt>%s</span><span class=pn>%s</span>" % (
                     html.escape(u or "/"), html.escape(humandur(t)),
-                    "" if a["uris"][u] == 1 else " &times;%d" % a["uris"][u])
+                    "" if a["uris"][u] == 1 else " &middot; %d hits" % a["uris"][u])
                 for u, t in a["uri_t"].most_common(6))
             extra = len(a["uri_t"]) - 6
             if extra > 0:
