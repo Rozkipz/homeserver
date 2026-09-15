@@ -254,7 +254,6 @@ tr:last-child td{border-bottom:none}
 .n{font-variant-numeric:tabular-nums;color:var(--mut)}
 .ua{color:var(--mut);font-size:.82rem;word-break:break-word;max-width:330px}
 .paths{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem;word-break:break-all;max-width:300px;line-height:1.75}
-.pt{color:var(--accent);font-weight:600;margin-left:6px;font-variant-numeric:tabular-nums}
 .pn{color:var(--mut);margin-left:4px}
 .rank{color:var(--mut);font-variant-numeric:tabular-nums}
 .cc{white-space:nowrap;font-size:.84rem}
@@ -280,7 +279,7 @@ def render():
            "<h1>Tarpit</h1>",
            "<p class=sub>Requests to this host that matched no site get handed to a tarpit "
            "that answers slowly and never finishes. This is who has been stuck in it. "
-           "Times are totals: per endpoint, and per client across every endpoint it hit.</p>"]
+           "Time is the total each client spent held, across every request it made.</p>"]
 
     out.append("<div class=cards>")
     for k, v in (("time wasted", humandur(total)), ("connections held", "{:,}".format(holds)),
@@ -296,23 +295,21 @@ def render():
     else:
         out.append("<div class=tw><table><thead><tr>"
                    "<th>#</th><th>client</th><th>country</th><th>wasted</th><th>hits</th>"
-                   "<th>user agent</th><th>endpoints &amp; total time</th><th>last seen</th>"
+                   "<th>user agent</th><th>endpoints</th><th>last seen</th>"
                    "</tr></thead><tbody>")
         for i, a in enumerate(agg, 1):
             ua, _ = a["uas"].most_common(1)[0]
             if len(a["uas"]) > 1:
                 ua += "  (+%d more)" % (len(a["uas"]) - 1)
-            # Time per endpoint, summed across every hit on it. Written "18s · 2 hits"
-            # rather than "18s x2", which reads as 18s EACH — the figure is the total,
-            # and the per-IP total is the sum of these lines.
-            paths = "<br>".join(
-                "%s <span class=pt>%s</span><span class=pn>%s</span>" % (
-                    html.escape(u or "/"), html.escape(humandur(t)),
-                    "" if a["uris"][u] == 1 else " &middot; %d hits" % a["uris"][u])
-                for u, t in a["uri_t"].most_common(6))
+            # Just the endpoints. Per-endpoint times and hit counts were shown here
+            # and repeatedly read as per-hit rather than totals, which made the row
+            # look like it did not add up. The only time on the row is now the
+            # client's total, which is unambiguous. Ordered by time spent, so the
+            # endpoint that cost them most is first even though the figure is not shown.
+            paths = ", ".join(html.escape(u or "/") for u, _ in a["uri_t"].most_common(6))
             extra = len(a["uri_t"]) - 6
             if extra > 0:
-                paths += "<br><span class=pn>+%d more</span>" % extra
+                paths += " <span class=pn>+%d more</span>" % extra
             g = _geo.get(a["ip"], {})
             cc = g.get("cc", "")
             country = ("<span class=fl>%s</span> %s" % (flag(cc), html.escape(g.get("country") or cc))
