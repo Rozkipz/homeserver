@@ -135,9 +135,10 @@ services:
       # holds.log.preclean backup, and counting one beside the live log doubles every
       # figure on the page. Rotations are picked up separately by the code.
       TARPIT_LOG_GLOB: /holds/holds.log
-      # No exclusions. This previously hid 141.98.255.243 as "test traffic", but that
-      # is the Mullvad exit mini egresses through, so it was filtering out real visits
-      # from the operator's own machine — including the longest hold on record.
+      # No exclusions, deliberately. 141.98.255.243 was excluded here once as "test
+      # traffic", but it is a SHARED Mullvad exit — filtering it hid real visits, and
+      # hits from it are not necessarily the operator. Purge history by IP if needed,
+      # but keep logging it.
       TARPIT_EXCLUDE: ""
       TARPIT_CACHE_TTL: "30"
       TARPIT_PORT: "8082"

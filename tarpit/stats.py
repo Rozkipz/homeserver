@@ -17,6 +17,8 @@ Env:
   TARPIT_EXCLUDE   comma-separated IPs to hide   (default empty)
   TARPIT_MIN_HOLD  ignore holds shorter than this (default 1.0 seconds)
   TARPIT_CACHE_TTL seconds between re-parses     (default 30)
+  TARPIT_GEO       set to 0 to disable geolocation lookups
+  TARPIT_GEO_CACHE where to persist ip->country   (default /holds/geo-cache.json)
   TARPIT_PORT      listen port                   (default 8082)
 """
 
@@ -26,7 +28,9 @@ import gzip
 import html
 import json
 import os
+import ipaddress
 import time
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 # Narrow on purpose: "holds.log*" also matches sidecar files like holds.log.preclean,
@@ -43,6 +47,91 @@ CACHE_TTL = float(os.environ.get("TARPIT_CACHE_TTL", "30"))
 PORT = int(os.environ.get("TARPIT_PORT", "8082"))
 
 _cache = {"at": 0.0, "html": ""}
+
+GEO_ON = os.environ.get("TARPIT_GEO", "1") != "0"
+GEO_CACHE = os.environ.get("TARPIT_GEO_CACHE", "/holds/geo-cache.json")
+_geo = {}          # ip -> {"cc","country","as"}
+_geo_loaded = [False]
+
+
+def flag(cc):
+    """Country code -> flag emoji, via regional indicator symbols.
+
+    Derived arithmetically rather than from a lookup table, so there is no data
+    file to ship or keep current.
+    """
+    cc = (cc or "").upper()
+    if len(cc) != 2 or not cc.isalpha():
+        return ""
+    return "".join(chr(0x1F1E6 + ord(c) - ord("A")) for c in cc)
+
+
+def _routable(ip):
+    """Is this worth asking a geolocation service about?
+
+    Prefix matching is not good enough here: "172.2" catches public 172.235.x as
+    well as the private 172.16/12 block, which silently left real hosts unlabelled.
+    """
+    try:
+        a = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return not (a.is_private or a.is_loopback or a.is_link_local
+                or a.is_multicast or a.is_reserved or a.is_unspecified)
+
+
+def _geo_load():
+    if _geo_loaded[0]:
+        return
+    _geo_loaded[0] = True
+    try:
+        with open(GEO_CACHE) as fh:
+            _geo.update(json.load(fh))
+    except Exception:
+        pass
+
+
+def _geo_save():
+    try:
+        tmp = GEO_CACHE + ".tmp"
+        with open(tmp, "w") as fh:
+            json.dump(_geo, fh)
+        os.replace(tmp, GEO_CACHE)
+        os.chmod(GEO_CACHE, 0o666)
+    except Exception:
+        pass
+
+
+def geo_lookup(ips):
+    """Resolve any IPs we have not seen before, and remember them.
+
+    ip-api's free tier allows 15 batch calls a minute, so results are cached on
+    disk and only genuinely new addresses are ever looked up — a steady-state
+    render makes no network calls at all. Capped at two batches per render so a
+    burst of new scanners cannot stall the page or trip the limit.
+    """
+    _geo_load()
+    todo = [ip for ip in ips if ip not in _geo and _routable(ip)]
+    if not GEO_ON or not todo:
+        return
+    changed = False
+    for batch in [todo[i:i + 100] for i in range(0, len(todo), 100)][:2]:
+        try:
+            req = urllib.request.Request(
+                "http://ip-api.com/batch?fields=status,countryCode,country,query,as",
+                data=json.dumps(batch).encode(),
+                headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                for row in json.load(resp):
+                    if row.get("status") == "success":
+                        _geo[row["query"]] = {"cc": row.get("countryCode", ""),
+                                              "country": row.get("country", ""),
+                                              "as": row.get("as", "")}
+                        changed = True
+        except Exception:
+            break   # offline or rate-limited: fall back to showing no country
+    if changed:
+        _geo_save()
 _skipped = [0]   # holds below MIN_HOLD, reported in the footer
 
 
@@ -156,6 +245,8 @@ tr:last-child td{border-bottom:none}
 .pt{color:var(--accent);font-weight:600;margin-left:6px;font-variant-numeric:tabular-nums}
 .pn{color:var(--mut);margin-left:4px}
 .rank{color:var(--mut);font-variant-numeric:tabular-nums}
+.cc{white-space:nowrap;font-size:.84rem}
+.fl{font-size:1.05rem;margin-right:3px;vertical-align:-1px}
 footer{color:var(--mut);font-size:.8rem;margin-top:22px;line-height:1.7}
 .empty{padding:40px;text-align:center;color:var(--mut)}
 @media(max-width:620px){body{padding-block:20px}h1{font-size:1.3rem}}
@@ -165,6 +256,7 @@ footer{color:var(--mut);font-size:.8rem;margin-top:22px;line-height:1.7}
 def render():
     rows = load()
     agg = aggregate(rows)
+    geo_lookup([a["ip"] for a in agg])
     total = sum(a["t"] for a in agg)
     holds = len(rows)
     tls = sum(a["tls"] for a in agg)
@@ -190,7 +282,7 @@ def render():
         out.append("<div class='tw'><div class=empty>Nothing caught yet.</div></div>")
     else:
         out.append("<div class=tw><table><thead><tr>"
-                   "<th>#</th><th>client</th><th>wasted</th><th>hits</th>"
+                   "<th>#</th><th>client</th><th>country</th><th>wasted</th><th>hits</th>"
                    "<th>user agent</th><th>endpoints &amp; time</th><th>last seen</th>"
                    "</tr></thead><tbody>")
         for i, a in enumerate(agg, 1):
@@ -206,11 +298,16 @@ def render():
             extra = len(a["uri_t"]) - 6
             if extra > 0:
                 paths += "<br><span class=pn>+%d more</span>" % extra
+            g = _geo.get(a["ip"], {})
+            cc = g.get("cc", "")
+            country = ("<span class=fl>%s</span> %s" % (flag(cc), html.escape(g.get("country") or cc))
+                       if cc else "<span class=pn>&mdash;</span>")
             out.append(
-                "<tr><td class=rank>%d</td><td class=ip>%s</td><td class=t>%s</td>"
+                "<tr><td class=rank>%d</td><td class=ip>%s</td><td class=cc>%s</td>"
+                "<td class=t>%s</td>"
                 "<td class=n>%d</td><td class=ua>%s</td><td class=paths>%s</td>"
                 "<td class=n>%s</td></tr>" % (
-                    i, html.escape(a["ip"]), html.escape(humandur(a["t"])), a["n"],
+                    i, html.escape(a["ip"]), country, html.escape(humandur(a["t"])), a["n"],
                     html.escape(ua or "-"), paths or "-",
                     time.strftime("%d %b %H:%M", time.gmtime(a["last"]))))
         out.append("</tbody></table></div>")
