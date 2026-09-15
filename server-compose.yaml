@@ -157,6 +157,31 @@ services:
         exec python -u /tarpit.py
     restart: always
 
+  # tarpit-stats — renders the tarpit access log as a table at tarpit.rowan.sh.
+  # Stdlib-only python (see tarpit/stats.py in the repo), so no build step and no pip.
+  #
+  # Reads Caddy's log directory READ-ONLY. It is the same volume Caddy writes the
+  # access log to; nothing here can modify or truncate it.
+  #
+  # TARPIT_EXCLUDE drops IPs from the table — currently the address used to test the
+  # tarpit while building it, which would otherwise sit at the top with a pile of
+  # synthetic holds and misrepresent the real traffic.
+  tarpit-stats:
+    image: python:3-alpine
+    container_name: tarpit_stats
+    networks:
+      - docker_bridge
+    environment:
+      TARPIT_LOG_GLOB: /logs/tarpit.log*
+      TARPIT_EXCLUDE: "141.98.255.243"
+      TARPIT_CACHE_TTL: "30"
+      TARPIT_PORT: "8082"
+    volumes:
+      - ~/services/tarpit/stats.py:/stats.py:ro
+      - ~/services/caddy/logs:/logs:ro
+    command: ["python", "-u", "/stats.py"]
+    restart: always
+
   caddy:
     image: caddy:2-alpine
     container_name: caddy
@@ -166,6 +191,7 @@ services:
       - rutorrent
       - tailnet-relay
       - tarpit
+      - tarpit-stats
     volumes:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data

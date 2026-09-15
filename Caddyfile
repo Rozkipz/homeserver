@@ -79,6 +79,16 @@ rt.rowan.sh {
     }
 }
 
+# tarpit.rowan.sh — public leaderboard of everything the tarpit has caught.
+# A real vhost, so it is matched before the catch-alls below and gets its own ACME
+# certificate; *.rowan.sh is a wildcard A record to this host, so HTTP-01 validates.
+#
+# This is deliberately public. To restrict it later, either add basic_auth here, or
+# a `@allowed remote_ip 100.64.0.0/10` matcher to limit it to the tailnet.
+tarpit.rowan.sh {
+	reverse_proxy http://tarpit-stats:8082
+}
+
 # HTTPS catch-all: same tarpit, for scanners that come in on :443.
 #
 # To tarpit an unknown hostname we have to COMPLETE a TLS handshake for it, which needs
