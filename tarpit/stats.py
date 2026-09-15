@@ -29,7 +29,11 @@ import os
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-LOG_GLOB = os.environ.get("TARPIT_LOG_GLOB", "/holds/holds.log*")
+# Narrow on purpose: "holds.log*" also matches sidecar files like holds.log.preclean,
+# and counting a backup alongside the live log silently doubles every figure on the
+# page. Only the live log and its numbered rotations.
+LOG_GLOB = os.environ.get("TARPIT_LOG_GLOB", "/holds/holds.log")
+LOG_GLOB_ROTATED = os.environ.get("TARPIT_LOG_GLOB_ROTATED", "/holds/holds.log.[0-9]*")
 EXCLUDE = {x.strip() for x in os.environ.get("TARPIT_EXCLUDE", "").split(",") if x.strip()}
 # Banner-grabbers read the headers and hang up in milliseconds. Those are not holds
 # in any meaningful sense, and a table full of 0s rows buries the real ones, so they
@@ -56,7 +60,7 @@ def load():
     """
     rows = []
     _skipped[0] = 0
-    for path in sorted(glob.glob(LOG_GLOB)):
+    for path in sorted(set(glob.glob(LOG_GLOB)) | set(glob.glob(LOG_GLOB_ROTATED))):
         try:
             with _open(path) as fh:
                 for line in fh:
@@ -109,12 +113,14 @@ def aggregate(rows):
             a = agg[r["ip"]] = {"ip": r["ip"], "n": 0, "t": 0.0, "tls": 0,
                                 "uas": collections.Counter(),
                                 "uris": collections.Counter(),
+                                "uri_t": collections.Counter(),
                                 "first": r["ts"], "last": r["ts"]}
         a["n"] += 1
         a["t"] += r["dur"]
         a["tls"] += 1 if r["tls"] else 0
         a["uas"][r["ua"]] += 1
         a["uris"][r["uri"]] += 1
+        a["uri_t"][r["uri"]] += r["dur"]
         a["first"] = min(a["first"], r["ts"])
         a["last"] = max(a["last"], r["ts"])
     return sorted(agg.values(), key=lambda a: -a["t"])
@@ -146,7 +152,9 @@ tr:last-child td{border-bottom:none}
 .t{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600;color:var(--accent)}
 .n{font-variant-numeric:tabular-nums;color:var(--mut)}
 .ua{color:var(--mut);font-size:.82rem;word-break:break-word;max-width:330px}
-.paths{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem;word-break:break-all;max-width:230px}
+.paths{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem;word-break:break-all;max-width:300px;line-height:1.75}
+.pt{color:var(--accent);font-weight:600;margin-left:6px;font-variant-numeric:tabular-nums}
+.pn{color:var(--mut);margin-left:4px}
 .rank{color:var(--mut);font-variant-numeric:tabular-nums}
 footer{color:var(--mut);font-size:.8rem;margin-top:22px;line-height:1.7}
 .empty{padding:40px;text-align:center;color:var(--mut)}
@@ -183,20 +191,27 @@ def render():
     else:
         out.append("<div class=tw><table><thead><tr>"
                    "<th>#</th><th>client</th><th>wasted</th><th>hits</th>"
-                   "<th>user agent</th><th>paths</th><th>last seen</th>"
+                   "<th>user agent</th><th>endpoints &amp; time</th><th>last seen</th>"
                    "</tr></thead><tbody>")
         for i, a in enumerate(agg, 1):
             ua, _ = a["uas"].most_common(1)[0]
             if len(a["uas"]) > 1:
                 ua += "  (+%d more)" % (len(a["uas"]) - 1)
-            paths = ", ".join(u if c == 1 else "%s x%d" % (u, c)
-                              for u, c in a["uris"].most_common(4))
+            # time per endpoint, not just how many times it was hit
+            paths = "<br>".join(
+                "%s <span class=pt>%s</span><span class=pn>%s</span>" % (
+                    html.escape(u or "/"), html.escape(humandur(t)),
+                    "" if a["uris"][u] == 1 else " &times;%d" % a["uris"][u])
+                for u, t in a["uri_t"].most_common(6))
+            extra = len(a["uri_t"]) - 6
+            if extra > 0:
+                paths += "<br><span class=pn>+%d more</span>" % extra
             out.append(
                 "<tr><td class=rank>%d</td><td class=ip>%s</td><td class=t>%s</td>"
                 "<td class=n>%d</td><td class=ua>%s</td><td class=paths>%s</td>"
                 "<td class=n>%s</td></tr>" % (
                     i, html.escape(a["ip"]), html.escape(humandur(a["t"])), a["n"],
-                    html.escape(ua or "-"), html.escape(paths or "-"),
+                    html.escape(ua or "-"), paths or "-",
                     time.strftime("%d %b %H:%M", time.gmtime(a["last"]))))
         out.append("</tbody></table></div>")
 
