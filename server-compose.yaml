@@ -78,6 +78,36 @@ services:
       - PGID=1001
     restart: always
 
+  # Tarpit for unmatched vhosts — the ":80" catch-all in the Caddyfile proxies here.
+  # Sends a status line then drips one junk header every 15s, never terminating the
+  # header block, so a scanner's connection hangs instead of getting a tidy 404.
+  #
+  # Not published to the host: only Caddy reaches it, over docker_bridge.
+  #
+  # max-children caps concurrent held connections. Internet background scanning is
+  # constant, and a tarpit holds a socket per request at BOTH ends, so an uncapped one
+  # is a self-DoS on a small VPS. Past the cap socat refuses new connections, which is
+  # the safe way to fail. -T900 reaps anything still parked after 15 minutes.
+  tarpit:
+    image: alpine/socat:latest
+    container_name: tarpit
+    networks:
+      - docker_bridge
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cat > /tarpit.sh <<'EOF'
+        #!/bin/sh
+        printf 'HTTP/1.1 200 OK\r\n'
+        while :; do
+          printf 'X-Pad: %s\r\n' "$$(od -An -N4 -tx1 /dev/urandom | tr -d ' ')"
+          sleep 15
+        done
+        EOF
+        chmod +x /tarpit.sh
+        exec socat -T900 TCP-LISTEN:8081,fork,reuseaddr,max-children=64 EXEC:/tarpit.sh
+    restart: always
+
   caddy:
     image: caddy:2-alpine
     container_name: caddy
@@ -86,6 +116,7 @@ services:
     depends_on:
       - rutorrent
       - tailnet-relay
+      - tarpit
     volumes:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data

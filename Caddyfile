@@ -79,6 +79,28 @@ rt.rowan.sh {
     }
 }
 
+# Catch-all: anything that does not match a vhost above — bare-IP probes, random
+# Host headers, vulnerability scanners. Previously answered a clean 404, which tells
+# a scanner the box is alive and lets it move on in milliseconds. Now it goes to the
+# tarpit sidecar (see server-compose.yaml), which sends a status line and then drips
+# one header every 15s, never sending the blank line that ends the header block, so
+# the client hangs until its own timeout.
+#
+# Caddy has no delay/tarpit module (verified against 2.11.4 with `caddy list-modules`),
+# which is why this is a sidecar rather than a directive.
+#
+# response_header_timeout is what bounds OUR side: the upstream deliberately never
+# completes its headers, so without it Caddy would hold the connection indefinitely.
+# A tarpit costs the host a held connection per scanner, so it is capped at both ends
+# — here, and by max-children on the socat listener.
+#
+# This is :80 only. Unmatched hostnames on :443 never get a certificate (on-demand TLS
+# is off), so they already fail at the TLS handshake and never reach a handler.
 :80 {
-	respond "Not found" 404
+	reverse_proxy http://tarpit:8081 {
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 300s
+		}
+	}
 }
