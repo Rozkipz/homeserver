@@ -152,7 +152,13 @@ services:
 
   # Tautulli — Plex monitoring / watch history / stats. Tailnet-only on purpose: no Caddy vhost
   # and no tailnet-relay hop on the edge host, so reach it at http://<monster tailnet IP>:8181.
-  # On `internal` so the setup wizard's Plex connection is http://plex:32400 (Docker DNS).
+  # On `internal` so Tautulli reaches Plex by Docker DNS. The connection must be
+  # https://plex:32400 pinned by hand in Tautulli's config.ini:
+  #   pms_ip = plex / pms_ssl = 1 / pms_url = https://plex:32400 / pms_url_manual = 1
+  #   verify_ssl_cert = 0   (Plex's cert only covers *.plex.direct, not the name `plex`)
+  # Plain http is refused — Plex here runs secureConnections=Required. And pms_url_manual
+  # must stay 1: left on auto-discovery Tautulli bakes Plex's *current* Docker IP into a
+  # 172-19-0-N.<hash>.plex.direct URL, which dies the next time that IP shifts.
   # Plex logs mounted read-only so Tautulli can show them (Settings > Plex Media Server > Logs);
   # the path is where the LSIO plex image keeps them under /config.
   tautulli:
