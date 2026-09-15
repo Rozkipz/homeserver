@@ -101,7 +101,11 @@ services:
     environment:
       TARPIT_DELAY: "10"
       TARPIT_MAX_CONN: "2000"
-      TARPIT_MAX_HOLD: "86400"
+      # Our ceiling on a single hold: 10 minutes. This is the only setting that ends a
+      # hold from our side — response_header_timeout on caddy is satisfied the moment
+      # the tarpit answers, so it never cuts one short. Anything ending before this is
+      # the client giving up, which the `end` field in the hold log records explicitly.
+      TARPIT_MAX_HOLD: "600"
       TARPIT_HOLD_LOG: /holds/holds.log
     volumes:
       - ~/services/tarpit/tarpit.py:/tarpit.py:ro
