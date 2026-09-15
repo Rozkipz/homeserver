@@ -116,6 +116,10 @@ rt.rowan.sh {
 	}
 
 	reverse_proxy http://tarpit:8081 {
+		# Without this Caddy buffers the upstream body and the client sees nothing —
+		# which is the silence problem the sidecar rewrite exists to fix. -1 flushes
+		# every chunk straight through as it arrives.
+		flush_interval -1
 		transport http {
 			dial_timeout 5s
 			response_header_timeout 300s
@@ -129,17 +133,12 @@ rt.rowan.sh {
 # tarpit sidecar (see server-compose.yaml), which never sends the blank line that ends
 # its header block, so the connection hangs instead of moving on.
 #
-# What the client actually gets is SILENCE, not a drip. The sidecar does emit a status
-# line plus an X-Pad header every 15s, but reverse_proxy has to parse a COMPLETE upstream
-# header block before it can send anything downstream, and that block never completes —
-# so Caddy absorbs the drip and the client receives ZERO bytes until it gives up, or
-# until Caddy 502s it at response_header_timeout. Measured at the socket level: 0 bytes
-# in 40s through Caddy, vs 17 bytes immediately and 17 more every 15s straight from the
-# sidecar. This means there is no response header for a client to look at; `curl -i` and
-# `curl -v` both show nothing back.
-#
-# The drip is therefore not something the scanner sees; it exists to keep the
-# sidecar->Caddy connection provably alive so Caddy's read timeouts do not fire early.
+# The sidecar sends a COMPLETE header block up front, then dribbles chunked body
+# forever. That ordering is deliberate. An earlier version never finished its headers,
+# so reverse_proxy buffered everything and the client received zero bytes — measured
+# 0 bytes in 40s — and scanners hang up quickly on silence. Answering 200 and then
+# streaming slowly makes the host look alive, so they stay. flush_interval -1 below is
+# required for this; without it Caddy buffers the body and the silence comes back.
 #
 # Caddy has no delay/tarpit module (verified against 2.11.4 with `caddy list-modules`),
 # which is why this is a sidecar rather than a directive.
@@ -177,6 +176,10 @@ rt.rowan.sh {
 	}
 
 	reverse_proxy http://tarpit:8081 {
+		# Without this Caddy buffers the upstream body and the client sees nothing —
+		# which is the silence problem the sidecar rewrite exists to fix. -1 flushes
+		# every chunk straight through as it arrives.
+		flush_interval -1
 		transport http {
 			dial_timeout 5s
 			response_header_timeout 300s

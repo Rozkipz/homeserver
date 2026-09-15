@@ -78,34 +78,83 @@ services:
       - PGID=1001
     restart: always
 
-  # Tarpit for unmatched vhosts — the ":80" catch-all in the Caddyfile proxies here.
-  # Sends a status line then drips one junk header every 15s, never terminating the
-  # header block, so a scanner's connection hangs instead of getting a tidy 404.
+  # Tarpit for unmatched vhosts — the ":80" and ":443" catch-alls in the Caddyfile
+  # proxy here. Sends a COMPLETE header block immediately, then dribbles chunked body
+  # forever. The complete header block is the point: the previous socat version never
+  # finished its headers, so reverse_proxy buffered the lot and the client got total
+  # silence — and scanners hang up fast on silence. A server that answers 200 and then
+  # streams slowly looks alive, so they wait. Caddy needs `flush_interval -1` for this
+  # or it buffers the body and we are back to silence.
   #
-  # Not published to the host: only Caddy reaches it, over docker_bridge.
+  # asyncio, not socat: socat forks a process per connection, and holding connections
+  # for a long time is the entire goal, so concurrency is the thing that has to scale.
+  # One event loop holds thousands cheaply; socat+shell per connection would not.
   #
-  # max-children caps concurrent held connections. Internet background scanning is
-  # constant, and a tarpit holds a socket per request at BOTH ends, so an uncapped one
-  # is a self-DoS on a small VPS. Past the cap socat refuses new connections, which is
-  # the safe way to fail. -T900 reaps anything still parked after 15 minutes.
+  # TARPIT_DELAY 10s sits under the 30-60s read timeout most clients use, so the drip
+  # keeps them alive without ever making progress. MAX_CONN bounds memory. MAX_HOLD is
+  # a 24h backstop so a dead peer cannot park a connection forever.
   tarpit:
-    image: alpine/socat:latest
+    image: python:3-alpine
     container_name: tarpit
     networks:
       - docker_bridge
+    environment:
+      TARPIT_DELAY: "10"
+      TARPIT_MAX_CONN: "2000"
+      TARPIT_MAX_HOLD: "86400"
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        cat > /tarpit.sh <<'EOF'
-        #!/bin/sh
-        printf 'HTTP/1.1 200 OK\r\n'
-        while :; do
-          printf 'X-Pad: %s\r\n' "$$(od -An -N4 -tx1 /dev/urandom | tr -d ' ')"
-          sleep 15
-        done
+        cat > /tarpit.py <<'EOF'
+        import asyncio, os, random, string
+
+        DELAY   = float(os.environ.get("TARPIT_DELAY", "10"))
+        MAXCONN = int(os.environ.get("TARPIT_MAX_CONN", "2000"))
+        MAXHOLD = float(os.environ.get("TARPIT_MAX_HOLD", "86400"))
+
+        HEAD = ("HTTP/1.1 200 OK\r\n"
+                "Server: nginx\r\n"
+                "Content-Type: text/html; charset=utf-8\r\n"
+                "Transfer-Encoding: chunked\r\n"
+                "Cache-Control: no-store\r\n"
+                "\r\n")
+
+        live = 0
+
+        def chunk(s):
+            b = s.encode()
+            return b"%x\r\n%s\r\n" % (len(b), b)
+
+        async def handle(reader, writer):
+            global live
+            if live >= MAXCONN:
+                writer.close(); return
+            live += 1
+            loop = asyncio.get_event_loop(); start = loop.time()
+            try:
+                try: await asyncio.wait_for(reader.read(8192), timeout=15)
+                except asyncio.TimeoutError: pass
+                writer.write(HEAD.encode()); await writer.drain()
+                writer.write(chunk("<html><head><title>Loading</title></head><body>"))
+                await writer.drain()
+                while loop.time() - start < MAXHOLD:
+                    await asyncio.sleep(DELAY)
+                    pad = "".join(random.choices(string.hexdigits.lower(), k=10))
+                    writer.write(chunk("<!-- %s -->" % pad)); await writer.drain()
+            except Exception:
+                pass
+            finally:
+                live -= 1
+                try: writer.close()
+                except Exception: pass
+
+        async def main():
+            s = await asyncio.start_server(handle, "0.0.0.0", 8081)
+            async with s: await s.serve_forever()
+
+        asyncio.run(main())
         EOF
-        chmod +x /tarpit.sh
-        exec socat -T900 TCP-LISTEN:8081,fork,reuseaddr,max-children=64 EXEC:/tarpit.sh
+        exec python -u /tarpit.py
     restart: always
 
   caddy:
