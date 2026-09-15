@@ -121,6 +121,9 @@ services:
       - ~/services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ~/services/caddy/data:/data
       - ~/services/caddy/config:/config
+      # Tarpit access log (see the :80 block in the Caddyfile). On a named volume path
+      # so the log survives container recreation; Caddy handles rotation itself.
+      - ~/services/caddy/logs:/var/log/caddy
     networks:
       - docker_bridge
     ports:

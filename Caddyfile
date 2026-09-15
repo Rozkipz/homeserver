@@ -97,6 +97,30 @@ rt.rowan.sh {
 # This is :80 only. Unmatched hostnames on :443 never get a certificate (on-demand TLS
 # is off), so they already fail at the TLS handshake and never reach a handler.
 :80 {
+	# Access log for tarpitted traffic: who probed, from where, for what, and how long
+	# they stayed. This has to live here rather than in the sidecar — Caddy terminates
+	# the client connection, so the tarpit container only ever sees Caddy's bridge IP.
+	#
+	# Caddy writes the entry when the request FINISHES, so `duration` is the real time
+	# the scanner spent held, and `status` is typically 502 (upstream never answered)
+	# or an aborted-connection code when they gave up first.
+	#
+	# Rotated by Caddy itself: 10MiB per file, 5 kept, 90 days. A public IP attracts
+	# constant background scanning, and every hit lands here, so this is deliberately
+	# bounded — unrotated it would fill the disk.
+	log {
+		output file /var/log/caddy/tarpit.log {
+			roll_size 10MiB
+			roll_keep 5
+			roll_keep_for 2160h
+			# Caddy runs as root in this image, so the log defaults to 0600 and `rowan`
+			# cannot read it without sudo. Rotation recreates the file, so the mode has to
+			# be set here rather than chmod'd once.
+			mode 644
+		}
+		format json
+	}
+
 	reverse_proxy http://tarpit:8081 {
 		transport http {
 			dial_timeout 5s
