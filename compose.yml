@@ -69,6 +69,11 @@ services:
       - ~/services/prowlarr/config:/config
     depends_on:
       - flaresolverr
+    labels:
+      # Updated by watchtower-lsio-a on its own schedule, not in the 04:00 burst —
+      # see the watchtower-lsio-a comment. This label is what keeps the catch-all
+      # watchtower (scope=none) off it.
+      com.centurylinklabs.watchtower.scope: "lsio-a"
     restart: always
 
   flaresolverr:
@@ -98,6 +103,11 @@ services:
       - ~/services/duplicati/restore:/restore
       - ~/services/duplicati/backups:/backups
       - ~/services/duplicati/source:/source
+    labels:
+      # Updated by watchtower-lsio-b on its own schedule, not in the 04:00 burst —
+      # see the watchtower-lsio-a comment. This label is what keeps the catch-all
+      # watchtower (scope=none) off it.
+      com.centurylinklabs.watchtower.scope: "lsio-b"
     restart: always
 
 
@@ -177,6 +187,11 @@ services:
       - "~/services/plex/config/Library/Application Support/Plex Media Server/Logs:/logs:ro"
     depends_on:
       - plex
+    labels:
+      # Updated by watchtower-lsio-b on its own schedule, not in the 04:00 burst —
+      # see the watchtower-lsio-a comment. This label is what keeps the catch-all
+      # watchtower (scope=none) off it.
+      com.centurylinklabs.watchtower.scope: "lsio-b"
     restart: always
 
   radarr:
@@ -205,6 +220,11 @@ services:
       - /mnt/remote/:/downloads/complete
     depends_on:
       - prowlarr
+    labels:
+      # Updated by watchtower-lsio-a on its own schedule, not in the 04:00 burst —
+      # see the watchtower-lsio-a comment. This label is what keeps the catch-all
+      # watchtower (scope=none) off it.
+      com.centurylinklabs.watchtower.scope: "lsio-a"
     restart: always
 
   sonarr:
@@ -233,6 +253,11 @@ services:
       - /mnt/remote/:/downloads/complete
     depends_on:
       - prowlarr
+    labels:
+      # Updated by watchtower-lsio-a on its own schedule, not in the 04:00 burst —
+      # see the watchtower-lsio-a comment. This label is what keeps the catch-all
+      # watchtower (scope=none) off it.
+      com.centurylinklabs.watchtower.scope: "lsio-a"
     restart: always
 
   # Jellyseerr — media-request frontend (replaces Ombi, which used to run on the edge host).
@@ -638,6 +663,12 @@ services:
       - WATCHTOWER_INCLUDE_RESTARTING=true
       # false = update everything except containers explicitly labelled enable=false.
       - WATCHTOWER_LABEL_ENABLE=false
+      # scope=none makes this the catch-all: it owns every container WITHOUT a
+      # com.centurylinklabs.watchtower.scope label, and — critically — leaves scoped
+      # containers alone, including the watchtower-lsio-* instances themselves. Without
+      # this an unscoped watchtower deletes every other watchtower container it finds
+      # ("Successfully removed all excess Watchtower containers").
+      - WATCHTOWER_SCOPE=none
       # Metrics API for the Homepage tile (scanned/updated/failed). No host port is published:
       # Homepage reaches it as http://watchtower:8080 over `internal`. Shares one secret with
       # HOMEPAGE_VAR_WATCHTOWER_KEY below — generate with `openssl rand -hex 16` into .env.
@@ -662,6 +693,89 @@ services:
         {{- end -}}
         {{- end -}}
         {{- end -}}{{- end -}}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  # watchtower-lsio-a / -b — the lscr.io (LinuxServer) images, split across two later windows.
+  #
+  # Why these are not in the 04:00 run: lscr.io remaps to ghcr.io, and watchtower 1.22.1 fetches a
+  # SEPARATE anonymous GHCR token per image. Checking all five at once drains GHCR's anonymous
+  # token bucket; GHCR answers 429 with a sub-millisecond retry-after (a refill signal, not a ban),
+  # and 1.22.1 treats that as a hard rate limit, stops retrying, and reports the container FAILED
+  # — which is what was firing the nightly Signal alerts. Upstream fix is merged
+  # (nicholas-fedor/watchtower#2366, "reuse anonymous GHCR tokens across public images") but is
+  # NOT in v1.22.1, the current release. Splitting 5 token fetches into 3 + 2, twenty minutes
+  # apart, keeps each burst under the bucket.
+  #
+  # When a release containing #2366 lands, these two instances can be deleted and their images
+  # removed from WATCHTOWER_SKIP_IMAGE_NAMES above. The real fix is authenticating to GHCR
+  # (a PAT with read:packages), which leaves the anonymous bucket entirely.
+  watchtower-lsio-a:
+    container_name: watchtower-lsio-a
+    image: ghcr.io/nicholas-fedor/watchtower:latest
+    networks:
+      - internal
+    environment:
+      - TZ=Europe/London
+      - WATCHTOWER_SCHEDULE=0 20 4 * * *
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_LABEL_ENABLE=false
+      # Scope: this instance only ever touches containers labelled
+      # com.centurylinklabs.watchtower.scope=lsio-a (its targets, plus itself).
+      - WATCHTOWER_SCOPE=lsio-a
+      - WATCHTOWER_NOTIFICATION_URL=${SIGNAL_SHOUTRRR_URL:?run the signal setup, see README}
+      - WATCHTOWER_NOTIFICATION_REPORT=true
+      - |
+        WATCHTOWER_NOTIFICATION_TEMPLATE={{- if .Report -}}{{- with .Report -}}
+        {{- if (or .Updated .Failed) -}}
+        monster/watchtower-lsio-a:
+        {{- range .Updated }}
+          updated {{ .Name }} ({{ .ImageName }})
+        {{- end -}}
+        {{- range .Failed }}
+          FAILED {{ .Name }} ({{ .ImageName }}): {{ .Error }}
+        {{- end -}}
+        {{- end -}}
+        {{- end -}}{{- end -}}
+    labels:
+      com.centurylinklabs.watchtower.scope: "lsio-a"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  # Second half of the lscr.io split — see watchtower-lsio-a above.
+  watchtower-lsio-b:
+    container_name: watchtower-lsio-b
+    image: ghcr.io/nicholas-fedor/watchtower:latest
+    networks:
+      - internal
+    environment:
+      - TZ=Europe/London
+      - WATCHTOWER_SCHEDULE=0 40 4 * * *
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_LABEL_ENABLE=false
+      # Scope: this instance only ever touches containers labelled
+      # com.centurylinklabs.watchtower.scope=lsio-b (its targets, plus itself).
+      - WATCHTOWER_SCOPE=lsio-b
+      - WATCHTOWER_NOTIFICATION_URL=${SIGNAL_SHOUTRRR_URL:?run the signal setup, see README}
+      - WATCHTOWER_NOTIFICATION_REPORT=true
+      - |
+        WATCHTOWER_NOTIFICATION_TEMPLATE={{- if .Report -}}{{- with .Report -}}
+        {{- if (or .Updated .Failed) -}}
+        monster/watchtower-lsio-b:
+        {{- range .Updated }}
+          updated {{ .Name }} ({{ .ImageName }})
+        {{- end -}}
+        {{- range .Failed }}
+          FAILED {{ .Name }} ({{ .ImageName }}): {{ .Error }}
+        {{- end -}}
+        {{- end -}}
+        {{- end -}}{{- end -}}
+    labels:
+      com.centurylinklabs.watchtower.scope: "lsio-b"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
