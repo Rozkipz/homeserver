@@ -321,6 +321,10 @@ services:
   immich-server:
     image: ghcr.io/immich-app/immich-server:release
     container_name: immich_server
+    labels:
+      # Immich server + DB must move in lockstep and releases carry breaking schema
+      # migrations, so this stack is updated by hand after reading the release notes.
+      com.centurylinklabs.watchtower.enable: "false"
     networks:
       - immich_internal
     ports:
@@ -350,6 +354,10 @@ services:
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:release
     container_name: immich_ml
+    labels:
+      # Immich server + DB must move in lockstep and releases carry breaking schema
+      # migrations, so this stack is updated by hand after reading the release notes.
+      com.centurylinklabs.watchtower.enable: "false"
     networks:
       - immich_internal
     volumes:
@@ -359,6 +367,10 @@ services:
   immich-database:
     image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
     container_name: immich_postgres
+    labels:
+      # Immich server + DB must move in lockstep and releases carry breaking schema
+      # migrations, so this stack is updated by hand after reading the release notes.
+      com.centurylinklabs.watchtower.enable: "false"
     networks:
       - immich_internal
     environment:
@@ -378,6 +390,10 @@ services:
   immich-redis:
     image: docker.io/valkey/valkey:8@sha256:81db6d39e1bba3b3ff32bd3a1b19a6d69690f94a3954ec131277b9a26b95b3aa
     container_name: immich_redis
+    labels:
+      # Immich server + DB must move in lockstep and releases carry breaking schema
+      # migrations, so this stack is updated by hand after reading the release notes.
+      com.centurylinklabs.watchtower.enable: "false"
     networks:
       - immich_internal
     volumes:
@@ -472,6 +488,8 @@ services:
       - HOMEPAGE_VAR_BAZARR_KEY=${HOMEPAGE_VAR_BAZARR_KEY:?run homepage/collect-keys.sh on the host}
       # Immich key is created by hand in the Immich UI (not on disk), so collect-keys.sh can't fetch it.
       - HOMEPAGE_VAR_IMMICH_KEY=${HOMEPAGE_VAR_IMMICH_KEY:?create an API key in Immich and add it to .env}
+      # Same value as the watchtower service's WATCHTOWER_HTTP_API_TOKEN — one secret, two readers.
+      - HOMEPAGE_VAR_WATCHTOWER_KEY=${WATCHTOWER_HTTP_API_TOKEN:?openssl rand -hex 16 into .env}
     volumes:
       - ~/services/homepage/config:/app/config
       - /mnt/drive1:/mnt/drive1:ro
@@ -541,6 +559,219 @@ services:
       - /mnt/drive11:/srv/drive11
       - /home/rowan:/srv/home
     restart: always
+
+  # Scrutiny — SMART health dashboard for all 13 disks (the 11 data drives plus the two
+  # Kingston SSDs that make up the md0 root mirror). This is the alerting gap-filler: the
+  # host's smartd mails root and nothing on this box can send mail, so drive failure was
+  # previously silent.
+  # The omnibus image bundles web UI + InfluxDB + collector. The collector needs raw device
+  # access: SYS_RAWIO plus an explicit `devices:` list (all drives are SATA, so SYS_RAWIO is
+  # enough — NVMe would need SYS_ADMIN). /run/udev is how it reads device model/serial.
+  # Scrutiny keys history off each drive's WWN/serial, so history survives /dev/sdX reshuffling
+  # across reboots; the devices list below just has to keep naming every disk.
+  # Tailnet-only, like Tautulli and Homepage: no Caddy vhost, no tailnet-relay hop.
+  # http://100.64.0.3:8080
+  scrutiny:
+    container_name: scrutiny
+    image: ghcr.io/analogj/scrutiny:latest-omnibus
+    networks:
+      - internal
+    ports:
+      - "8080:8080"
+    cap_add:
+      - SYS_RAWIO
+    environment:
+      - TZ=Europe/London
+      # Collector runs on the container's own cron. Every 6h keeps SMART polling light;
+      # the drives are `-n standby`-friendly spinners and this won't wake them needlessly.
+      - COLLECTOR_CRON_SCHEDULE=0 0 */6 * * *
+      # Notifications. Scrutiny reads config through viper with a SCRUTINY_ prefix and "." -> "_",
+      # so this maps to the `notify.urls` key -- set here rather than in a scrutiny.yaml so the
+      # auto-generated InfluxDB setup is left alone. `disabletls=yes` is required: shoutrrr's
+      # signal service defaults to HTTPS, and signal-api speaks plain HTTP on `internal`.
+      - SCRUTINY_NOTIFY_URLS=${SIGNAL_SHOUTRRR_URL:?run the signal setup, see README}
+    volumes:
+      - ~/services/scrutiny/config:/opt/scrutiny/config
+      - ~/services/scrutiny/influxdb:/opt/scrutiny/influxdb
+      - /run/udev:/run/udev:ro
+    devices:
+      - /dev/sda:/dev/sda
+      - /dev/sdb:/dev/sdb
+      - /dev/sdc:/dev/sdc
+      - /dev/sdd:/dev/sdd
+      - /dev/sde:/dev/sde
+      - /dev/sdf:/dev/sdf
+      - /dev/sdg:/dev/sdg
+      - /dev/sdh:/dev/sdh
+      - /dev/sdi:/dev/sdi
+      - /dev/sdj:/dev/sdj
+      - /dev/sdk:/dev/sdk
+      - /dev/sdl:/dev/sdl
+      - /dev/sdm:/dev/sdm
+    restart: always
+
+  # Watchtower — nightly image pull + recreate for everything on this host.
+  # Uses the actively-maintained nicholas-fedor fork: upstream containrrr/watchtower has had
+  # no release since Nov 2023. It keeps the original com.centurylinklabs.watchtower.* labels.
+  # Needs the real read-write Docker socket to recreate containers, so it cannot go through
+  # the read-only dockerproxy sidecar that Homepage uses (that one sets POST=0 on purpose).
+  # WATCHTOWER_CLEANUP prunes the superseded images so the 24GB of stale layers this host had
+  # accumulated doesn't just rebuild itself.
+  # Opted out via label (see below): the Immich stack, whose server/DB must move in lockstep
+  # and whose releases carry breaking schema migrations. Remove those labels to include it.
+  watchtower:
+    container_name: watchtower
+    image: ghcr.io/nicholas-fedor/watchtower:latest
+    networks:
+      - internal
+    environment:
+      - TZ=Europe/London
+      # 04:00 daily — after the 03:00 Immich DB dump, before the 04:30 person-sync cron.
+      - WATCHTOWER_SCHEDULE=0 0 4 * * *
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      # false = update everything except containers explicitly labelled enable=false.
+      - WATCHTOWER_LABEL_ENABLE=false
+      # Metrics API for the Homepage tile (scanned/updated/failed). No host port is published:
+      # Homepage reaches it as http://watchtower:8080 over `internal`. Shares one secret with
+      # HOMEPAGE_VAR_WATCHTOWER_KEY below — generate with `openssl rand -hex 16` into .env.
+      - WATCHTOWER_HTTP_API_METRICS=true
+      - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN:?openssl rand -hex 16 into .env}
+      # Signal notifications, same shoutrrr URL as Scrutiny.
+      - WATCHTOWER_NOTIFICATION_URL=${SIGNAL_SHOUTRRR_URL:?run the signal setup, see README}
+      - WATCHTOWER_NOTIFICATION_REPORT=true
+      # The template deliberately emits NOTHING when there is nothing to say -- watchtower skips
+      # empty notifications. A nightly "0 updated" message would train you to ignore the channel,
+      # which is the exact failure mode this alerting exists to avoid.
+      - |
+        WATCHTOWER_NOTIFICATION_TEMPLATE={{- if .Report -}}{{- with .Report -}}
+        {{- if (or .Updated .Failed) -}}
+        monster/watchtower:
+        {{- range .Updated }}
+          updated {{ .Name }} ({{ .ImageName }})
+        {{- end -}}
+        {{- range .Failed }}
+          FAILED {{ .Name }} ({{ .ImageName }}): {{ .Error }}
+        {{- end -}}
+        {{- end -}}
+        {{- end -}}{{- end -}}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  # signal-cli-rest-api — Signal bridge for alerting. Scrutiny and Watchtower both bundle
+  # shoutrrr, which has a native `signal://` service that POSTs {message,number,recipients[]}
+  # to this container's /v2/send. smartd (on the host, outside Docker) curls it on 127.0.0.1:8090.
+  #
+  # MODE=normal spawns signal-cli per request (~5s). Slower than json-rpc, but json-rpc cannot
+  # register or link a device, and alert volume here is a handful of messages a month.
+  # Switch to json-rpc later if you want faster sends — only after the account is linked.
+  #
+  # Tailnet-only: no Caddy vhost, no tailnet-relay hop. Port 8090 is published only so the
+  # linking QR code (/v1/qrcodelink) can be opened from a browser on the tailnet.
+  #
+  # The volume holds the linked-device identity and keys — losing it means re-linking from
+  # the phone, so it is worth including in the backup set once backups exist.
+  signal-api:
+    container_name: signal-api
+    image: bbernhard/signal-cli-rest-api:latest
+    networks:
+      - internal
+    ports:
+      - "8090:8080"
+    environment:
+      - MODE=normal
+      - TZ=Europe/London
+    volumes:
+      - ~/services/signal-api/config:/home/.local/share/signal-cli
+    restart: always
+
+  # restic-backup — nightly encrypted, deduplicated, versioned backup to micro over the tailnet.
+  #
+  # This is the first real BACKUP in the setup. The existing immich-backup job mirrors drive1 ->
+  # drive3 with `rsync --delete`: that is redundancy against a drive dying, not a backup. Delete a
+  # photo by accident and it is gone from the mirror within 6h. restic keeps snapshots, so you can
+  # go back to how things looked last Tuesday.
+  #
+  # network_mode: host so it can reach micro on 100.64.0.6 via the host's tailscale0. A container
+  # on the `internal` bridge has no route into 100.64.0.0/10 (same reason mill's unpackerr shares
+  # the tsmill netns).
+  #
+  # RESTIC_PASSWORD encrypts the repo. micro NEVER sees it — a copy also sits in
+  # ~/services/restic/repo-password.txt on monster, but if monster burns down that copy burns with
+  # it. Keep it in a password manager or the backup is unrecoverable.
+  #
+  # Retention: 7 daily, 4 weekly, 6 monthly. Integrity check every Sunday (--read-data-subset
+  # spot-checks real chunk data, not just metadata, so bit-rot on micro's disk gets caught).
+  restic-backup:
+    container_name: restic_backup
+    image: restic/restic:latest
+    network_mode: host
+    environment:
+      TZ: Europe/London
+      RESTIC_REPOSITORY: sftp:rowan@100.64.0.6:/home/rowan/backups/monster
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:?generate one, see README}
+      # Where to pull mill's config from. mill's host is not on the tailnet (only the tsmill
+      # container is), so this goes over the public internet to its OVH address.
+      MILL_SSH: rowan@37.187.103.230
+    volumes:
+      - ~/services/restic/ssh:/root/.ssh:ro
+      - ~/services/restic/cache:/root/.cache/restic
+      - ~/services/restic/exclude.txt:/etc/restic-exclude.txt:ro
+      - ~/services/restic/mill:/backup/mill          # writable: staging for mill's config
+      - /mnt/drive1/images:/backup/immich:ro
+      - ~/services:/backup/services:ro
+      - ~/homeserver:/backup/homeserver:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -u
+        log() { echo "[restic] $(date -u +%FT%TZ) $$*"; }
+
+        # Wait for the repo to be reachable, then initialise it once.
+        until restic cat config >/dev/null 2>&1; do
+          if restic init 2>&1 | grep -q "created restic repository"; then
+            log "repository initialised"; break
+          fi
+          log "repo unreachable (is micro up? does monster's netmap know it?) - retrying in 60s"
+          sleep 60
+        done
+
+        while true; do
+          # Stage mill's config. Extracted as files rather than kept as a tarball so restic can
+          # deduplicate them properly -- a gzip stream changes wholesale on any edit.
+          log "staging mill config"
+          if ssh -i /root/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new \
+                 -o ConnectTimeout=20 "$$MILL_SSH" \
+                 'tar cf - -C "$$HOME" services/headscale services/caddy 2>/dev/null' \
+               | tar xf - -C /backup/mill 2>/dev/null; then
+            log "mill config staged"
+          else
+            log "WARNING: mill staging failed - continuing with local data"
+          fi
+
+          log "starting backup"
+          if restic backup --verbose=1 --host monster \
+               --exclude-file /etc/restic-exclude.txt \
+               /backup/immich /backup/services /backup/homeserver /backup/mill; then
+            log "backup OK"
+            restic forget --host monster --prune \
+              --keep-daily 7 --keep-weekly 4 --keep-monthly 6 && log "retention applied"
+          else
+            log "BACKUP FAILED (rc=$$?)"
+          fi
+
+          # Sunday: verify a slice of the actual data, not just the index.
+          if [ "$$(date +%u)" = "7" ]; then
+            log "weekly integrity check"
+            restic check --read-data-subset=5% && log "check OK" || log "CHECK FAILED"
+          fi
+
+          log "sleeping 24h"
+          sleep 86400
+        done
+    restart: unless-stopped
 
 networks:
   internal:

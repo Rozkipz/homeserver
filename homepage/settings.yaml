@@ -19,7 +19,7 @@ layout:
     columns: 4
   Infrastructure:
     style: row
-    columns: 4
+    columns: 5
   Public (rowan.sh):
     style: row
     columns: 6

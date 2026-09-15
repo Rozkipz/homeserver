@@ -153,3 +153,23 @@
         description: Cloudflare solver for Prowlarr
         server: monster
         container: flaresolverr
+    - Scrutiny:
+        icon: scrutiny.png
+        href: http://100.64.0.3:8080
+        description: Drive SMART health
+        server: monster
+        container: scrutiny
+        # No API key: Scrutiny's summary endpoint is unauthenticated.
+        widget:
+          type: scrutiny
+          url: http://scrutiny:8080
+    - Watchtower:
+        icon: watchtower.png
+        description: Nightly image updates
+        server: monster
+        container: watchtower
+        # No href: watchtower has no UI, only the metrics API the widget reads.
+        widget:
+          type: watchtower
+          url: http://watchtower:8080
+          key: "{{HOMEPAGE_VAR_WATCHTOWER_KEY}}"

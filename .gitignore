@@ -1,2 +1,6 @@
 .idea
 .env
+# Secrets and local backups — .env.bak.* on monster would otherwise be committable.
+.env*
+*.bak
+*.bak.*

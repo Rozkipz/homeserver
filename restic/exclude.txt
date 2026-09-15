@@ -1,0 +1,54 @@
+# restic exclude list for the monster -> micro backup.
+# Paths are as seen INSIDE the container (see the volume mounts in compose.yml).
+# Rule of thumb: exclude anything regenerable, anything enormous, and any live database
+# file that cannot be copied consistently while its service is running.
+
+# --- Plex: 177G on disk, of which ~172G is regenerable artwork and transcode cache. ---
+# Kept: Plug-in Support/Databases (the library DB - watch history, ratings, playlists,
+# collections) and Preferences.xml (server identity + claim token).
+/backup/services/plex/config/Library/Application Support/Plex Media Server/Media
+/backup/services/plex/config/Library/Application Support/Plex Media Server/Metadata
+/backup/services/plex/config/Library/Application Support/Plex Media Server/Cache
+/backup/services/plex/config/Library/Application Support/Plex Media Server/Plug-ins
+/backup/services/plex/config/Library/Application Support/Plex Media Server/Drivers
+/backup/services/plex/config/Library/Application Support/Plex Media Server/Crash Reports
+/backup/services/plex/transcode
+/backup/services/plex/data
+
+# --- Immich service dir: the LIVE Postgres data directory. ---
+# A hot file-level copy of a running Postgres is not a valid backup and can restore corrupt.
+# The real DB backup is Immich's own nightly dump in /mnt/drive1/images/backups/, which IS
+# included via the immich mount below.
+/backup/services/immich/db
+/backup/services/immich/redis
+/backup/services/immich/cache
+
+# --- *arr artwork: posters/fanart, re-downloaded automatically. 4.5G combined. ---
+/backup/services/sonarr/config/MediaCover
+/backup/services/radarr/config/MediaCover
+/backup/services/sonarr/config/logs
+/backup/services/radarr/config/logs
+/backup/services/prowlarr/config/logs
+/backup/services/bazarr/config/log
+
+# --- restic's own cache: would grow without bound and back itself up. ---
+/backup/services/restic/cache
+
+# --- Dead services, kept on disk but not worth versioning. ---
+/backup/services/heimdall
+/backup/services/filegator
+/backup/services/wizarr
+/backup/services/checkrr
+/backup/services/tailscale_old
+/backup/services/duplicati
+
+# --- Immich derived data: thumbnails and transcodes, rebuilt from the originals in upload/. ---
+# Excluding these saves ~12G per snapshot and a lot of churn. After a restore, run
+# Administration > Jobs > Generate Thumbnails / Transcode Video to rebuild.
+/backup/immich/thumbs
+/backup/immich/encoded-video
+
+# --- Generic noise ---
+**/*.tmp
+**/Thumbs.db
+**/.DS_Store
